@@ -9,6 +9,24 @@ server:
 spring:
   application:
     name: vynk
+  datasource:
+    url: jdbc:h2:file:./data/vynk;AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  h2:
+    console:
+      enabled: false
 
 logging:
   pattern:
@@ -22,3 +40,15 @@ management:
   endpoint:
     health:
       show-details: never
+
+# The API document is generated locally and from CI. Never route /v3/api-docs or
+# /swagger-ui through the public NGINX configuration; set VYNK_API_DOCS_ENABLED=false
+# in deployed environments.
+springdoc:
+  # Keep the shared Problem and PageResponse schemas even before an endpoint references them.
+  remove-broken-reference-definitions: false
+  api-docs:
+    enabled: ${VYNK_API_DOCS_ENABLED:true}
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: false
