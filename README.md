@@ -16,7 +16,19 @@ Vynk is a professional networking demo — a monorepo for an original, LinkedIn-
 
 ## Startup (local)
 - Frontend: `cd frontend && npm ci && npm start` — serves on `http://localhost:4200/`
-- Backend: `cd backend && mvn spring-boot:run` — binds to loopback, uses H2 file DB
+- Backend: `cd backend && ./mvnw spring-boot:run` — binds to loopback, uses H2 file DB
+
+The backend uses the committed Maven wrapper, so a separate Maven install is not required.
+
+## Quality checks (local)
+- Frontend: `cd frontend && npm run format:check && npm run build && npm run test:ci`
+- Backend: `cd backend && ./mvnw verify`
+
+## Continuous integration
+`.github/workflows/quality.yml` runs the frontend format/build/test checks and the backend
+`./mvnw verify` build on every pull request and on pushes to `main`. Both jobs must pass for the
+workflow run to be green. To block merges when the workflow fails, enable branch protection for
+`main` and require the **Quality** status checks.
 
 ## Notes
 - No Docker, no separate PostgreSQL. Frontend served by NGINX in deployment; backend is an OpenRC service on Alpine.
