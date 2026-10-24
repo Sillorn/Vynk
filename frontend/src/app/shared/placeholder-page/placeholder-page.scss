@@ -1,0 +1,16 @@
+.placeholder-panel {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 46rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.placeholder-panel h2 {
+  font: var(--mat-sys-title-large);
+}
+
+.placeholder-panel p {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-large);
+  text-wrap: pretty;
+}
