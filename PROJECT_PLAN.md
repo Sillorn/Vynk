@@ -1,4 +1,4 @@
-# Professional Network Demo — Full Project Plan
+# Vynk — Full Project Plan
 
 **Status:** Planning deliverable; implementation not started.  
 **Baseline:** Discovery rounds 1–7 and accepted decisions in round 8's predecessor context, dated 24 October 2026.  

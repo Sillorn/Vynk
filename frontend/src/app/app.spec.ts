@@ -38,7 +38,7 @@ describe('App shell', () => {
     const nav = element.querySelector<HTMLElement>('nav[aria-label="Primary"]');
     const links = Array.from(nav?.querySelectorAll<HTMLAnchorElement>('a') ?? []);
 
-    expect(element.querySelector('.brand-name')?.textContent).toContain('Pro Network');
+    expect(element.querySelector('.brand-name')?.textContent).toContain('Vynk');
     expect(links.map((link) => link.textContent?.trim())).toEqual([
       'Feed',
       'People',

@@ -19,7 +19,7 @@ export const routes: Routes = [
     'feed',
     'Feed',
     'Your professional feed',
-    'Follow updates from the Pro Network community. Public posts and a connections-only view will appear here.',
+    'Follow updates from the Vynk community. Public posts and a connections-only view will appear here.',
   ),
   placeholderPage(
     'people',
@@ -31,7 +31,7 @@ export const routes: Routes = [
     'network',
     'My network',
     'Your network',
-    'Review invitations, accepted connections and the people you have met on Pro Network.',
+    'Review invitations, accepted connections and the people you have met on Vynk.',
   ),
   placeholderPage(
     'messages',

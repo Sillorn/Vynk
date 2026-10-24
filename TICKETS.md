@@ -1,4 +1,4 @@
-# Implementation backlog — Professional Network Demo
+# Implementation backlog — Vynk
 
 **63 tickets, M0–M6.** Dependency links refer to ticket IDs. No tickets have been created on GitHub and no implementation has started. `PROPOSED` tags are approval-gated pending Round 8.
 

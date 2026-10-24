@@ -8,7 +8,7 @@ import { map } from 'rxjs';
   template: `
     <section class="page">
       <div class="page-intro">
-        <p class="eyebrow">Pro Network</p>
+        <p class="eyebrow">Vynk</p>
         <h1>{{ heading() }}</h1>
         <p class="lede">{{ description() }}</p>
       </div>
@@ -28,8 +28,8 @@ export class PlaceholderPage {
   private readonly route = inject(ActivatedRoute);
 
   protected readonly heading = toSignal(
-    this.route.data.pipe(map((data) => (data['heading'] as string | undefined) ?? 'Pro Network')),
-    { initialValue: 'Pro Network' },
+    this.route.data.pipe(map((data) => (data['heading'] as string | undefined) ?? 'Vynk')),
+    { initialValue: 'Vynk' },
   );
 
   protected readonly description = toSignal(

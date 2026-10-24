@@ -1,11 +1,11 @@
-package com.pronetwork;
+package com.vynk;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ProNetworkApplication {
+public class VynkApplication {
     public static void main(String[] args) {
-        SpringApplication.run(ProNetworkApplication.class, args);
+        SpringApplication.run(VynkApplication.class, args);
     }
 }

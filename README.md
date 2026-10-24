@@ -1,6 +1,6 @@
-# pro-network-plan
+# Vynk
 
-Professional Network Demo — monorepo for an original LinkedIn-inspired networking demo.
+Vynk is a professional networking demo — a monorepo for an original, LinkedIn-inspired application.
 
 ## Structure
 - `frontend/` — Angular 22 (standalone) PWA
@@ -15,12 +15,10 @@ Professional Network Demo — monorepo for an original LinkedIn-inspired network
 - Git
 
 ## Startup (local)
-This repo currently contains the plan/tickets only. Implementation will follow the backlog in `PROJECT_PLAN.md` and `TICKETS.md`.
-
-- Frontend: `cd frontend && npm ci && npm start` (once bootstrapped)
-- Backend: `cd backend && ./mvnw spring-boot:run` (once bootstrapped) — binds to loopback, uses H2 file DB
+- Frontend: `cd frontend && npm ci && npm start` — serves on `http://localhost:4200/`
+- Backend: `cd backend && mvn spring-boot:run` — binds to loopback, uses H2 file DB
 
 ## Notes
-- No Docker, no separate PostgreSQL. Frontend served by NGINX in deployment; backend is OpenRC service on Alpine.
+- No Docker, no separate PostgreSQL. Frontend served by NGINX in deployment; backend is an OpenRC service on Alpine.
 - Auth is session-cookie + CSRF; SSE for notifications/messages (REST fallback/reconnect).
-- See `PROJECT_PLAN.md` for full decisions and constraints.
+- See `PROJECT_PLAN.md` for full decisions and constraints and `TICKETS.md` for the delivery backlog.
