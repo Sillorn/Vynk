@@ -1,23 +1,23 @@
 ID,Milestone,Type,Title,Priority,Estimate_points,Depends_on,Acceptance_criteria,Decision_status,Status
-PN-001,M0,Task,Initialize monorepo and minimal README,P0,2,,Repository has frontend backend deploy and workflow folders; README explains prerequisites and startup,CONFIRMED,Backlog
-PN-002,M0,Task,Bootstrap Angular 22 standalone application,P0,3,PN-001,Angular app starts locally; strict TypeScript enabled; base routes compile,CONFIRMED,Backlog
-PN-003,M0,Task,Bootstrap Spring Boot 4.1.2 Java 25 service,P0,3,PN-001,Service starts on loopback; versioned API stub and health check respond,CONFIRMED,Backlog
-PN-004,M0,Task,Establish frontend design system and route shell,P0,3,PN-002,Angular Material theme; navigation shell; responsive layout; accessible baseline,CONFIRMED,Backlog
-PN-005,M0,Story,Implement backend module skeleton and shared error model,P0,3,PN-003,Feature packages exist; RFC9457 error DTO and trace ID standard used,CONFIRMED,Backlog
-PN-006,M0,Story,Implement GitHub Actions quality workflow,P0,3,"PN-002, PN-003",Frontend and backend build and test on pull requests; failures block green status,CONFIRMED,Backlog
-PN-007,M0,Task,Establish API specification and contract conventions,P0,2,PN-005,"OpenAPI generated locally; endpoint naming, pagination, validation errors documented",CONFIRMED,Backlog
-PN-008,M1,Task,Configure persistent H2 database and Flyway,P0,3,PN-003,File database survives restart; Flyway runs; Hibernate validates; second process not supported,CONFIRMED,Backlog
-PN-009,M1,Story,Model accounts profiles and SQL integrity,P0,5,PN-008,User/profile tables; lowercase-letter username invariant; reserved-name and unique constraints; indexes,CONFIRMED,Backlog
-PN-010,M1,Story,Implement session auth and CSRF handling,P0,5,PN-009,"Secure cookie, SameSite Lax; Angular XSRF header; login logout; 7-day idle setting tested",CONFIRMED,Backlog
-PN-011,M1,Story,Build username-password registration API,P0,5,"PN-009, PN-010",Atomic account/profile creation; required name headline summary; validation and duplicate conflicts,CONFIRMED,Backlog
-PN-012,M1,Story,Build registration/login/logout Angular views,P0,5,"PN-004, PN-011",Accessible forms and field errors; session restore and redirects,CONFIRMED,Backlog
-PN-013,M1,Story,Implement user settings password update and deletion,P0,5,"PN-010, PN-011",Current-password verification; logout; confirmed transactional account deletion; backend tests,CONFIRMED,Backlog
-PN-014,M1,Story,Enforce authorization and data ownership,P0,5,"PN-010, PN-011",403 or privacy-preserving 404 for unauthorized operations; anonymous private access denied,CONFIRMED,Backlog
-PN-015,M1,Story,Implement auth throttling and security headers,P0,3,"PN-010, PN-011",Login and registration rate limited; secure headers; private information excluded from logs,CONFIRMED,Backlog
+PN-001,M0,Task,Initialize monorepo and minimal README,P0,2,,Repository has frontend backend deploy and workflow folders; README explains prerequisites and startup,CONFIRMED,Done
+PN-002,M0,Task,Bootstrap Angular 22 standalone application,P0,3,PN-001,Angular app starts locally; strict TypeScript enabled; base routes compile,CONFIRMED,Done
+PN-003,M0,Task,Bootstrap Spring Boot 4.1.2 Java 25 service,P0,3,PN-001,Service starts on loopback; versioned API stub and health check respond,CONFIRMED,Done
+PN-004,M0,Task,Establish frontend design system and route shell,P0,3,PN-002,Angular Material theme; navigation shell; responsive layout; accessible baseline,CONFIRMED,Done
+PN-005,M0,Story,Implement backend module skeleton and shared error model,P0,3,PN-003,Feature packages exist; RFC9457 error DTO and trace ID standard used,CONFIRMED,Done
+PN-006,M0,Story,Implement GitHub Actions quality workflow,P0,3,"PN-002, PN-003",Frontend and backend build and test on pull requests; failures block green status,CONFIRMED,Done
+PN-007,M0,Task,Establish API specification and contract conventions,P0,2,PN-005,"OpenAPI generated locally; endpoint naming, pagination, validation errors documented",CONFIRMED,Done
+PN-008,M1,Task,Configure persistent H2 database and Flyway,P0,3,PN-003,File database survives restart; Flyway runs; Hibernate validates; second process not supported,CONFIRMED,Done
+PN-009,M1,Story,Model accounts profiles and SQL integrity,P0,5,PN-008,User/profile tables; lowercase-letter username invariant; reserved-name and unique constraints; indexes,CONFIRMED,Done
+PN-010,M1,Story,Implement session auth and CSRF handling,P0,5,PN-009,"Secure cookie, SameSite Lax; Angular XSRF header; login logout; 7-day idle setting tested",CONFIRMED,Done
+PN-011,M1,Story,Build username-password registration API,P0,5,"PN-009, PN-010",Atomic account/profile creation; required name headline summary; validation and duplicate conflicts,CONFIRMED,Done
+PN-012,M1,Story,Build registration/login/logout Angular views,P0,5,"PN-004, PN-011",Accessible forms and field errors; session restore and redirects,CONFIRMED,Done
+PN-013,M1,Story,Implement user settings password update and deletion,P0,5,"PN-010, PN-011",Current-password verification; logout; confirmed transactional account deletion; backend tests,CONFIRMED,Done
+PN-014,M1,Story,Enforce authorization and data ownership,P0,5,"PN-010, PN-011",403 or privacy-preserving 404 for unauthorized operations; anonymous private access denied,CONFIRMED,Done
+PN-015,M1,Story,Implement auth throttling and security headers,P0,3,"PN-010, PN-011",Login and registration rate limited; secure headers; private information excluded from logs,CONFIRMED,Done
 PN-016,M1,Story,Build auth integration and browser E2E coverage,P0,5,"PN-012, PN-013, PN-014, PN-015","Register/login/logout, CSRF, expired session, password change, delete tested",CONFIRMED,Backlog
-PN-017,M2,Story,Design full structured profile schema,P1,5,PN-009,Experience education certifications projects skills languages links dates and ordering migrated,CONFIRMED,Backlog
-PN-018,M2,Story,Implement public profile read endpoints,P1,3,"PN-017, PN-014",Public DTO hides private data; profile by immutable username; optional empty sections omitted,CONFIRMED,Backlog
-PN-019,M2,Story,Implement profile section edit REST endpoints,P1,5,"PN-017, PN-014","Owner-only CRUD, explicit save, validation for dates and lengths, ordering supported",CONFIRMED,Backlog
+PN-017,M2,Story,Design full structured profile schema,P1,5,PN-009,Experience education certifications projects skills languages links dates and ordering migrated,CONFIRMED,Done
+PN-018,M2,Story,Implement public profile read endpoints,P1,3,"PN-017, PN-014",Public DTO hides private data; profile by immutable username; optional empty sections omitted,CONFIRMED,Done
+PN-019,M2,Story,Implement profile section edit REST endpoints,P1,5,"PN-017, PN-014","Owner-only CRUD, explicit save, validation for dates and lengths, ordering supported",CONFIRMED,Done
 PN-020,M2,Story,Build public profile page and avatar,P1,5,"PN-004, PN-018",Readable responsive public page and generated initials avatar; no uploads,CONFIRMED,Backlog
 PN-021,M2,Story,Build section-based profile editor,P1,8,"PN-004, PN-019","Reactive forms, save/cancel, error display, unsaved-change guard, reorder entries",CONFIRMED,Backlog
 PN-022,M2,Story,Build professional experience/education workflows,P1,5,"PN-019, PN-021",Create edit delete reorder and ongoing role cases pass,CONFIRMED,Backlog

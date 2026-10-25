@@ -45,24 +45,23 @@ export const routes: Routes = [
     'Notifications',
     'Connection invitations, acceptance updates and unread message counts will collect here.',
   ),
-  placeholderPage(
-    'settings',
-    'Settings',
-    'Account settings',
-    'Change your password, sign out of this session or delete your account.',
-  ),
-  placeholderPage(
-    'login',
-    'Sign in',
-    'Welcome back',
-    'Sign in with your username and password to continue.',
-  ),
-  placeholderPage(
-    'register',
-    'Create account',
-    'Create your account',
-    'Build a professional profile with your name, headline and a short summary.',
-  ),
+  {
+    path: 'settings',
+    title: 'Settings',
+    loadComponent: () =>
+      import('./features/settings/settings-page/settings-page').then((m) => m.SettingsPage),
+  },
+  {
+    path: 'login',
+    title: 'Sign in',
+    loadComponent: () => import('./features/auth/login-page/login-page').then((m) => m.LoginPage),
+  },
+  {
+    path: 'register',
+    title: 'Create account',
+    loadComponent: () =>
+      import('./features/auth/register-page/register-page').then((m) => m.RegisterPage),
+  },
   {
     path: 'profile/:username',
     title: 'Profile',

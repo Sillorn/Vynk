@@ -42,7 +42,13 @@
 
       <div class="toolbar-actions">
         <a matButton routerLink="/login">Sign in</a>
-        <a matButton="filled" routerLink="/register">Create account</a>
+        @if (auth.user(); as user) {
+          <span class="user-chip">{{ user.username }}</span>
+          <button matButton type="button" (click)="logout()">Sign out</button>
+        } @else {
+          <a matButton routerLink="/login">Sign in</a>
+          <a matButton="filled" routerLink="/register">Create account</a>
+        }
       </div>
     }
   </mat-toolbar>
@@ -84,7 +90,14 @@
 
         <div class="mobile-nav__actions">
           <a matButton routerLink="/login" (click)="closeMenu()">Sign in</a>
-          <a matButton="filled" routerLink="/register" (click)="closeMenu()"> Create account </a>
+          @if (auth.user(); as user) {
+            <button matButton type="button" (click)="logout()">
+              Sign out ({{ user.username }})
+            </button>
+          } @else {
+            <a matButton routerLink="/login" (click)="closeMenu()">Sign in</a>
+            <a matButton="filled" routerLink="/register" (click)="closeMenu()"> Create account </a>
+          }
         </div>
       </nav>
     </mat-sidenav>

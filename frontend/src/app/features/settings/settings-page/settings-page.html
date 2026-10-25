@@ -1,0 +1,83 @@
+<main class="settings-page">
+  <section class="settings-header">
+    <h1>Account settings</h1>
+    <p>Manage your password and account.</p>
+  </section>
+
+  <mat-card class="settings-card" appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Change password</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="changePassword()" novalidate>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Current password</mat-label>
+          <input
+            matInput
+            type="password"
+            formControlName="currentPassword"
+            autocomplete="current-password"
+          />
+          @if (
+            form.controls.currentPassword.touched &&
+            form.controls.currentPassword.hasError('required')
+          ) {
+            <mat-error>Required.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>New password</mat-label>
+          <input
+            matInput
+            type="password"
+            formControlName="newPassword"
+            autocomplete="new-password"
+          />
+          @if (
+            form.controls.newPassword.touched && form.controls.newPassword.hasError('required')
+          ) {
+            <mat-error>Required.</mat-error>
+          }
+          @if (
+            form.controls.newPassword.touched && form.controls.newPassword.hasError('minlength')
+          ) {
+            <mat-error>At least 12 characters.</mat-error>
+          }
+        </mat-form-field>
+
+        @if (pwError()) {
+          <p class="form-error" role="alert">{{ pwError() }}</p>
+        }
+        @if (pwSuccess()) {
+          <p class="form-success">Password updated.</p>
+        }
+
+        <button matButton="filled" type="submit" [disabled]="pwSubmitting()">
+          Update password
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="settings-card" appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Delete account</mat-card-title>
+      <mat-card-subtitle>This action is permanent.</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (delError()) {
+        <p class="form-error" role="alert">{{ delError() }}</p>
+      }
+      <button
+        matButton="filled"
+        color="warn"
+        type="button"
+        (click)="deleteAccount()"
+        [disabled]="delSubmitting()"
+      >
+        Delete account
+      </button>
+    </mat-card-content>
+  </mat-card>
+</main>

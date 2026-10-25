@@ -8,6 +8,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
+import { AuthService } from './core/auth/auth.service';
 
 interface NavItem {
   readonly label: string;
@@ -36,6 +37,7 @@ export class App {
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  protected readonly auth = inject(AuthService);
 
   protected readonly isHandset = toSignal(
     this.breakpointObserver.observe(MOBILE_BREAKPOINT).pipe(map((state) => state.matches)),
@@ -87,5 +89,18 @@ export class App {
 
   protected closeMenu(): void {
     this.menuOpen.set(false);
+  }
+
+  protected logout(): void {
+    this.auth.logout().subscribe({
+      next: () => {
+        this.closeMenu();
+        this.router.navigateByUrl('/login');
+      },
+      error: () => {
+        this.closeMenu();
+        this.router.navigateByUrl('/login');
+      },
+    });
   }
 }

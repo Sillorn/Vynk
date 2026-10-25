@@ -1,6 +1,13 @@
 server:
   address: 127.0.0.1
   port: 8080
+  servlet:
+    session:
+      timeout: 7d
+      cookie:
+        http-only: true
+        secure: false
+        same-site: lax
   error:
     include-exception: false
     include-message: never
@@ -31,6 +38,8 @@ spring:
 logging:
   pattern:
     level: "%5p [traceId=%X{traceId:-}]"
+  level:
+    org.flywaydb: DEBUG
 
 management:
   endpoints:

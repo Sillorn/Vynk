@@ -74,6 +74,12 @@
   flex: 1 1 auto;
 }
 
+.user-chip {
+  margin-right: 0.5rem;
+  font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .primary-nav {
   display: flex;
   align-items: center;
