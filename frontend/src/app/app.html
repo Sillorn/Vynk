@@ -41,7 +41,6 @@
       <span class="toolbar-spacer"></span>
 
       <div class="toolbar-actions">
-        <a matButton routerLink="/login">Sign in</a>
         @if (auth.user(); as user) {
           <span class="user-chip">{{ user.username }}</span>
           <button matButton type="button" (click)="logout()">Sign out</button>
@@ -89,7 +88,6 @@
         </div>
 
         <div class="mobile-nav__actions">
-          <a matButton routerLink="/login" (click)="closeMenu()">Sign in</a>
           @if (auth.user(); as user) {
             <button matButton type="button" (click)="logout()">
               Sign out ({{ user.username }})

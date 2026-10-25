@@ -65,13 +65,10 @@ export const routes: Routes = [
   {
     path: 'profile/:username',
     title: 'Profile',
-    data: {
-      heading: 'Professional profile',
-      description:
-        'Public profile details, experience, education, skills and a downloadable CV will appear here.',
-    },
     loadComponent: () =>
-      import('./shared/placeholder-page/placeholder-page').then((m) => m.PlaceholderPage),
+      import('./features/profiles/public-profile-page/public-profile-page').then(
+        (m) => m.PublicProfilePage,
+      ),
   },
   {
     path: '**',

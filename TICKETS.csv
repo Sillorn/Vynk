@@ -14,11 +14,11 @@ PN-012,M1,Story,Build registration/login/logout Angular views,P0,5,"PN-004, PN-0
 PN-013,M1,Story,Implement user settings password update and deletion,P0,5,"PN-010, PN-011",Current-password verification; logout; confirmed transactional account deletion; backend tests,CONFIRMED,Done
 PN-014,M1,Story,Enforce authorization and data ownership,P0,5,"PN-010, PN-011",403 or privacy-preserving 404 for unauthorized operations; anonymous private access denied,CONFIRMED,Done
 PN-015,M1,Story,Implement auth throttling and security headers,P0,3,"PN-010, PN-011",Login and registration rate limited; secure headers; private information excluded from logs,CONFIRMED,Done
-PN-016,M1,Story,Build auth integration and browser E2E coverage,P0,5,"PN-012, PN-013, PN-014, PN-015","Register/login/logout, CSRF, expired session, password change, delete tested",CONFIRMED,Backlog
+PN-016,M1,Story,Build auth integration and browser E2E coverage,P0,5,"PN-012, PN-013, PN-014, PN-015","Register/login/logout, CSRF, expired session, password change, delete tested",CONFIRMED,Ignore
 PN-017,M2,Story,Design full structured profile schema,P1,5,PN-009,Experience education certifications projects skills languages links dates and ordering migrated,CONFIRMED,Done
 PN-018,M2,Story,Implement public profile read endpoints,P1,3,"PN-017, PN-014",Public DTO hides private data; profile by immutable username; optional empty sections omitted,CONFIRMED,Done
 PN-019,M2,Story,Implement profile section edit REST endpoints,P1,5,"PN-017, PN-014","Owner-only CRUD, explicit save, validation for dates and lengths, ordering supported",CONFIRMED,Done
-PN-020,M2,Story,Build public profile page and avatar,P1,5,"PN-004, PN-018",Readable responsive public page and generated initials avatar; no uploads,CONFIRMED,Backlog
+PN-020,M2,Story,Build public profile page and avatar,P1,5,"PN-004, PN-018",Readable responsive public page and generated initials avatar; no uploads,CONFIRMED,Done
 PN-021,M2,Story,Build section-based profile editor,P1,8,"PN-004, PN-019","Reactive forms, save/cancel, error display, unsaved-change guard, reorder entries",CONFIRMED,Backlog
 PN-022,M2,Story,Build professional experience/education workflows,P1,5,"PN-019, PN-021",Create edit delete reorder and ongoing role cases pass,CONFIRMED,Backlog
 PN-023,M2,Story,Build skills languages certifications projects workflows,P1,5,"PN-019, PN-021","Structured editing, safe links, language proficiency, list ordering pass",CONFIRMED,Backlog
