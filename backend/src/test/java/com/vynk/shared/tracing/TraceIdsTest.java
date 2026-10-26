@@ -1,11 +1,10 @@
 package com.vynk.shared.tracing;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.mock.web.MockHttpServletRequest;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class TraceIdsTest {
 

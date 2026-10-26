@@ -8,8 +8,10 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:ci": "ng test --watch=false",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format": "vp fmt src --write",
+    "format:check": "vp fmt src --check",
+    "lint": "vp lint",
+    "lint:fix": "vp lint --fix"
   },
   "private": true,
   "packageManager": "npm@11.16.0",
@@ -30,8 +32,8 @@
     "@angular/cli": "^22.2.4",
     "@angular/compiler-cli": "^22.2.0",
     "jsdom": "^30.0.0",
-    "prettier": "^3.8.1",
     "typescript": "~6.0.2",
+    "vite-plus": "^1.4.0",
     "vitest": "^5.0.0"
   }
 }

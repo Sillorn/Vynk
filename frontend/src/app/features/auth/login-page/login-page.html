@@ -10,10 +10,9 @@
           <mat-label>Username</mat-label>
           <input matInput formControlName="username" autocomplete="username" inputmode="text" />
           @if (form.controls.username.touched && form.controls.username.hasError('required')) {
-            <mat-error>Username is required.</mat-error>
-          }
-          @if (form.controls.username.touched && form.controls.username.hasError('username')) {
-            <mat-error>Use 3-30 lowercase letters only.</mat-error>
+          <mat-error>Username is required.</mat-error>
+          } @if (form.controls.username.touched && form.controls.username.hasError('username')) {
+          <mat-error>Use 3-30 lowercase letters only.</mat-error>
           }
         </mat-form-field>
 
@@ -26,12 +25,12 @@
             autocomplete="current-password"
           />
           @if (form.controls.password.touched && form.controls.password.hasError('required')) {
-            <mat-error>Password is required.</mat-error>
+          <mat-error>Password is required.</mat-error>
           }
         </mat-form-field>
 
         @if (error()) {
-          <p class="form-error" role="alert">{{ error() }}</p>
+        <p class="form-error" role="alert">{{ error() }}</p>
         }
 
         <button matButton="filled" class="full-width" type="submit" [disabled]="submitting()">

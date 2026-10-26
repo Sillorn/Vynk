@@ -1,11 +1,10 @@
 package com.vynk.profiles;
 
-import java.time.LocalDate;
-import java.util.List;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Validated request payloads for owner-only profile section saves.

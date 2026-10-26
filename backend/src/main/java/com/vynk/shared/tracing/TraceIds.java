@@ -1,10 +1,9 @@
 package com.vynk.shared.tracing;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
-
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.MDC;
 
 /**

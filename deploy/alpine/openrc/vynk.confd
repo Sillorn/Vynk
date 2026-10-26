@@ -1,0 +1,3 @@
+# Copy to /etc/conf.d/vynk and set secrets explicitly.
+VYNK_HOME=/var/lib/vynk
+VYNK_CONFIG=/etc/vynk/vynk.env

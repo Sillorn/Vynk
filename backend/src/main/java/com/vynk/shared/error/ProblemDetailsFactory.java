@@ -2,7 +2,6 @@ package com.vynk.shared.error;
 
 import java.net.URI;
 import java.util.List;
-
 import org.springframework.http.ProblemDetail;
 import org.springframework.stereotype.Component;
 

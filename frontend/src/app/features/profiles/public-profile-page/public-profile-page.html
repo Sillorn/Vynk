@@ -1,209 +1,190 @@
 <article class="page profile-page">
   @if (loading()) {
-    <div class="state-card" role="status" aria-live="polite">
-      <mat-spinner diameter="40" aria-hidden="true" />
-      <p>Loading profile…</p>
-    </div>
+  <div class="state-card" role="status" aria-live="polite">
+    <mat-spinner diameter="40" aria-hidden="true" />
+    <p>Loading profile…</p>
+  </div>
   } @else if (error(); as message) {
-    <div class="state-card" role="alert">
-      <p class="eyebrow">Vynk</p>
-      <h1>Profile unavailable</h1>
-      <p class="lede">{{ message }}</p>
-      <div class="state-card__actions">
-        <button matButton="filled" type="button" (click)="reload()">Try again</button>
-        <a matButton routerLink="/people">Browse people</a>
-      </div>
+  <div class="state-card" role="alert">
+    <p class="eyebrow">Vynk</p>
+    <h1>Profile unavailable</h1>
+    <p class="lede">{{ message }}</p>
+    <div class="state-card__actions">
+      <button matButton="filled" type="button" (click)="reload()">Try again</button>
+      <a matButton routerLink="/people">Browse people</a>
     </div>
+  </div>
   } @else if (profile(); as profile) {
-    <header class="profile-hero surface-card">
-      <app-initials-avatar
-        [firstName]="profile.firstName"
-        [lastName]="profile.lastName"
-        [username]="profile.username"
-        [size]="112"
-      />
+  <header class="profile-hero surface-card">
+    <app-initials-avatar
+      [firstName]="profile.firstName"
+      [lastName]="profile.lastName"
+      [username]="profile.username"
+      [size]="112"
+    />
 
-      <div class="profile-hero__body">
-        <p class="eyebrow">&#64;{{ profile.username }}</p>
-        <h1>{{ fullName(profile) }}</h1>
-        @if (profile.headline) {
-          <p class="profile-headline">{{ profile.headline }}</p>
-        }
-        @if (profile.location) {
-          <p class="profile-location">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path
-                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-              />
-            </svg>
-            <span>{{ profile.location }}</span>
-          </p>
-        }
-      </div>
-    </header>
-
-    <div class="profile-layout" [class.profile-layout--single]="!hasSidebar()">
-      <div class="profile-main">
-        @if (profile.summary) {
-          <section class="surface-card profile-section" aria-labelledby="about-heading">
-            <h2 id="about-heading">About</h2>
-            <p class="prose">{{ profile.summary }}</p>
-          </section>
-        }
-
-        @if (profile.experience?.length) {
-          <section class="surface-card profile-section" aria-labelledby="experience-heading">
-            <h2 id="experience-heading">Experience</h2>
-            <ol class="timeline">
-              @for (item of profile.experience; track $index) {
-                <li class="timeline__item">
-                  <h3>{{ item.title }}</h3>
-                  <p class="timeline__meta">
-                    <span class="timeline__org">{{ item.company }}</span>
-                    @if (item.location) {
-                      <span aria-hidden="true"> · </span>
-                      <span>{{ item.location }}</span>
-                    }
-                  </p>
-                  @if (period(item.startDate, item.endDate, item.current); as range) {
-                    <p class="timeline__dates">{{ range }}</p>
-                  }
-                  @if (item.description) {
-                    <p class="prose">{{ item.description }}</p>
-                  }
-                </li>
-              }
-            </ol>
-          </section>
-        }
-
-        @if (profile.education?.length) {
-          <section class="surface-card profile-section" aria-labelledby="education-heading">
-            <h2 id="education-heading">Education</h2>
-            <ol class="timeline">
-              @for (item of profile.education; track $index) {
-                <li class="timeline__item">
-                  <h3>{{ item.school }}</h3>
-                  @if (item.degree || item.fieldOfStudy) {
-                    <p class="timeline__meta">
-                      @if (item.degree) {
-                        <span>{{ item.degree }}</span>
-                      }
-                      @if (item.degree && item.fieldOfStudy) {
-                        <span aria-hidden="true"> · </span>
-                      }
-                      @if (item.fieldOfStudy) {
-                        <span>{{ item.fieldOfStudy }}</span>
-                      }
-                    </p>
-                  }
-                  @if (period(item.startDate, item.endDate); as range) {
-                    <p class="timeline__dates">{{ range }}</p>
-                  }
-                  @if (item.description) {
-                    <p class="prose">{{ item.description }}</p>
-                  }
-                </li>
-              }
-            </ol>
-          </section>
-        }
-
-        @if (profile.projects?.length) {
-          <section class="surface-card profile-section" aria-labelledby="projects-heading">
-            <h2 id="projects-heading">Projects</h2>
-            <ol class="timeline">
-              @for (item of profile.projects; track $index) {
-                <li class="timeline__item">
-                  <h3>{{ item.name }}</h3>
-                  @if (period(item.startDate, item.endDate); as range) {
-                    <p class="timeline__dates">{{ range }}</p>
-                  }
-                  @if (item.description) {
-                    <p class="prose">{{ item.description }}</p>
-                  }
-                  @if (item.url; as url) {
-                    <a class="inline-link" [href]="url" target="_blank" rel="noopener noreferrer">
-                      View project<span class="visually-hidden"> (opens in a new tab)</span>
-                    </a>
-                  }
-                </li>
-              }
-            </ol>
-          </section>
-        }
-
-        @if (profile.certifications?.length) {
-          <section class="surface-card profile-section" aria-labelledby="certifications-heading">
-            <h2 id="certifications-heading">Certifications</h2>
-            <ol class="timeline">
-              @for (item of profile.certifications; track $index) {
-                <li class="timeline__item">
-                  <h3>{{ item.name }}</h3>
-                  @if (item.issuer) {
-                    <p class="timeline__meta">{{ item.issuer }}</p>
-                  }
-                  @if (certificationPeriod(item.issueDate, item.expirationDate); as range) {
-                    <p class="timeline__dates">{{ range }}</p>
-                  }
-                  @if (item.credentialUrl; as url) {
-                    <a class="inline-link" [href]="url" target="_blank" rel="noopener noreferrer">
-                      View credential<span class="visually-hidden"> (opens in a new tab)</span>
-                    </a>
-                  }
-                </li>
-              }
-            </ol>
-          </section>
-        }
-      </div>
-
-      @if (hasSidebar()) {
-        <aside class="profile-aside" aria-label="Skills, languages and links">
-          @if (profile.skills?.length) {
-            <section class="surface-card profile-section" aria-labelledby="skills-heading">
-              <h2 id="skills-heading">Skills</h2>
-              <ul class="chip-list">
-                @for (skill of profile.skills; track $index) {
-                  <li class="chip">{{ skill.name }}</li>
-                }
-              </ul>
-            </section>
-          }
-
-          @if (profile.languages?.length) {
-            <section class="surface-card profile-section" aria-labelledby="languages-heading">
-              <h2 id="languages-heading">Languages</h2>
-              <ul class="detail-list">
-                @for (language of profile.languages; track $index) {
-                  <li>
-                    <span class="detail-list__label">{{ language.name }}</span>
-                    @if (language.proficiency) {
-                      <span class="detail-list__value">{{ language.proficiency }}</span>
-                    }
-                  </li>
-                }
-              </ul>
-            </section>
-          }
-
-          @if (profile.links?.length) {
-            <section class="surface-card profile-section" aria-labelledby="links-heading">
-              <h2 id="links-heading">Links</h2>
-              <ul class="detail-list">
-                @for (link of profile.links; track $index) {
-                  <li>
-                    <a [href]="link.url" target="_blank" rel="noopener noreferrer">
-                      {{ link.label }}
-                      <span class="visually-hidden"> (opens in a new tab)</span>
-                    </a>
-                  </li>
-                }
-              </ul>
-            </section>
-          }
-        </aside>
+    <div class="profile-hero__body">
+      <p class="eyebrow">&#64;{{ profile.username }}</p>
+      <h1>{{ fullName(profile) }}</h1>
+      <a matButton="filled" [href]="cvUrl(profile)" [attr.download]="profile.username + '-cv.pdf'"
+        >Download CV (PDF)</a
+      >
+      @if (profile.headline) {
+      <p class="profile-headline">{{ profile.headline }}</p>
+      } @if (profile.location) {
+      <p class="profile-location">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+          />
+        </svg>
+        <span>{{ profile.location }}</span>
+      </p>
       }
     </div>
+  </header>
+
+  <div class="profile-layout" [class.profile-layout--single]="!hasSidebar()">
+    <div class="profile-main">
+      @if (profile.summary) {
+      <section class="surface-card profile-section" aria-labelledby="about-heading">
+        <h2 id="about-heading">About</h2>
+        <p class="prose">{{ profile.summary }}</p>
+      </section>
+      } @if (profile.experience?.length) {
+      <section class="surface-card profile-section" aria-labelledby="experience-heading">
+        <h2 id="experience-heading">Experience</h2>
+        <ol class="timeline">
+          @for (item of profile.experience; track $index) {
+          <li class="timeline__item">
+            <h3>{{ item.title }}</h3>
+            <p class="timeline__meta">
+              <span class="timeline__org">{{ item.company }}</span>
+              @if (item.location) {
+              <span aria-hidden="true"> · </span>
+              <span>{{ item.location }}</span>
+              }
+            </p>
+            @if (period(item.startDate, item.endDate, item.current); as range) {
+            <p class="timeline__dates">{{ range }}</p>
+            } @if (item.description) {
+            <p class="prose">{{ item.description }}</p>
+            }
+          </li>
+          }
+        </ol>
+      </section>
+      } @if (profile.education?.length) {
+      <section class="surface-card profile-section" aria-labelledby="education-heading">
+        <h2 id="education-heading">Education</h2>
+        <ol class="timeline">
+          @for (item of profile.education; track $index) {
+          <li class="timeline__item">
+            <h3>{{ item.school }}</h3>
+            @if (item.degree || item.fieldOfStudy) {
+            <p class="timeline__meta">
+              @if (item.degree) {
+              <span>{{ item.degree }}</span>
+              } @if (item.degree && item.fieldOfStudy) {
+              <span aria-hidden="true"> · </span>
+              } @if (item.fieldOfStudy) {
+              <span>{{ item.fieldOfStudy }}</span>
+              }
+            </p>
+            } @if (period(item.startDate, item.endDate); as range) {
+            <p class="timeline__dates">{{ range }}</p>
+            } @if (item.description) {
+            <p class="prose">{{ item.description }}</p>
+            }
+          </li>
+          }
+        </ol>
+      </section>
+      } @if (profile.projects?.length) {
+      <section class="surface-card profile-section" aria-labelledby="projects-heading">
+        <h2 id="projects-heading">Projects</h2>
+        <ol class="timeline">
+          @for (item of profile.projects; track $index) {
+          <li class="timeline__item">
+            <h3>{{ item.name }}</h3>
+            @if (period(item.startDate, item.endDate); as range) {
+            <p class="timeline__dates">{{ range }}</p>
+            } @if (item.description) {
+            <p class="prose">{{ item.description }}</p>
+            } @if (item.url; as url) {
+            <a class="inline-link" [href]="url" target="_blank" rel="noopener noreferrer">
+              View project<span class="visually-hidden"> (opens in a new tab)</span>
+            </a>
+            }
+          </li>
+          }
+        </ol>
+      </section>
+      } @if (profile.certifications?.length) {
+      <section class="surface-card profile-section" aria-labelledby="certifications-heading">
+        <h2 id="certifications-heading">Certifications</h2>
+        <ol class="timeline">
+          @for (item of profile.certifications; track $index) {
+          <li class="timeline__item">
+            <h3>{{ item.name }}</h3>
+            @if (item.issuer) {
+            <p class="timeline__meta">{{ item.issuer }}</p>
+            } @if (certificationPeriod(item.issueDate, item.expirationDate); as range) {
+            <p class="timeline__dates">{{ range }}</p>
+            } @if (item.credentialUrl; as url) {
+            <a class="inline-link" [href]="url" target="_blank" rel="noopener noreferrer">
+              View credential<span class="visually-hidden"> (opens in a new tab)</span>
+            </a>
+            }
+          </li>
+          }
+        </ol>
+      </section>
+      }
+    </div>
+
+    @if (hasSidebar()) {
+    <aside class="profile-aside" aria-label="Skills, languages and links">
+      @if (profile.skills?.length) {
+      <section class="surface-card profile-section" aria-labelledby="skills-heading">
+        <h2 id="skills-heading">Skills</h2>
+        <ul class="chip-list">
+          @for (skill of profile.skills; track $index) {
+          <li class="chip">{{ skill.name }}</li>
+          }
+        </ul>
+      </section>
+      } @if (profile.languages?.length) {
+      <section class="surface-card profile-section" aria-labelledby="languages-heading">
+        <h2 id="languages-heading">Languages</h2>
+        <ul class="detail-list">
+          @for (language of profile.languages; track $index) {
+          <li>
+            <span class="detail-list__label">{{ language.name }}</span>
+            @if (language.proficiency) {
+            <span class="detail-list__value">{{ language.proficiency }}</span>
+            }
+          </li>
+          }
+        </ul>
+      </section>
+      } @if (profile.links?.length) {
+      <section class="surface-card profile-section" aria-labelledby="links-heading">
+        <h2 id="links-heading">Links</h2>
+        <ul class="detail-list">
+          @for (link of profile.links; track $index) {
+          <li>
+            <a [href]="link.url" target="_blank" rel="noopener noreferrer">
+              {{ link.label }}
+              <span class="visually-hidden"> (opens in a new tab)</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </section>
+      }
+    </aside>
+    }
+  </div>
   }
 </article>

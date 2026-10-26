@@ -1,50 +1,40 @@
-import { Route, Routes } from '@angular/router';
-
-const placeholderPage = (
-  path: string,
-  title: string,
-  heading: string,
-  description: string,
-): Route => ({
-  path,
-  title,
-  data: { heading, description },
-  loadComponent: () =>
-    import('./shared/placeholder-page/placeholder-page').then((m) => m.PlaceholderPage),
-});
+import { Routes } from '@angular/router';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'feed' },
-  placeholderPage(
-    'feed',
-    'Feed',
-    'Your professional feed',
-    'Follow updates from the Vynk community. Public posts and a connections-only view will appear here.',
-  ),
-  placeholderPage(
-    'people',
-    'People',
-    'Find people',
-    'Search public profiles by name, headline or skills and start building your professional network.',
-  ),
-  placeholderPage(
-    'network',
-    'My network',
-    'Your network',
-    'Review invitations, accepted connections and the people you have met on Vynk.',
-  ),
-  placeholderPage(
-    'messages',
-    'Messages',
-    'Private messages',
-    'Hold focused conversations with your accepted connections. Message history stays private to both participants.',
-  ),
-  placeholderPage(
-    'notifications',
-    'Notifications',
-    'Notifications',
-    'Connection invitations, acceptance updates and unread message counts will collect here.',
-  ),
+  {
+    path: 'feed',
+    title: 'Feed',
+    loadComponent: () => import('./features/social/feed-page/feed-page').then((m) => m.FeedPage),
+  },
+  {
+    path: 'people',
+    title: 'People',
+    loadComponent: () =>
+      import('./features/profiles/people-directory/people-directory').then(
+        (m) => m.PeopleDirectory,
+      ),
+  },
+  {
+    path: 'network',
+    title: 'My network',
+    loadComponent: () =>
+      import('./features/social/network-page/network-page').then((m) => m.NetworkPage),
+  },
+  {
+    path: 'messages',
+    title: 'Messages',
+    loadComponent: () =>
+      import('./features/social/messages-page/messages-page').then((m) => m.MessagesPage),
+  },
+  {
+    path: 'notifications',
+    title: 'Notifications',
+    loadComponent: () =>
+      import('./features/social/notifications-page/notifications-page').then(
+        (m) => m.NotificationsPage,
+      ),
+  },
   {
     path: 'settings',
     title: 'Settings',
@@ -61,6 +51,12 @@ export const routes: Routes = [
     title: 'Create account',
     loadComponent: () =>
       import('./features/auth/register-page/register-page').then((m) => m.RegisterPage),
+  },
+  {
+    path: 'profile/edit',
+    title: 'Edit profile',
+    loadComponent: () =>
+      import('./features/profiles/profile-editor/profile-editor').then((m) => m.ProfileEditor),
   },
   {
     path: 'profile/:username',

@@ -1,0 +1,27 @@
+#!/sbin/openrc-run
+
+name="Vynk backend"
+description="Vynk Spring Boot API"
+command="/usr/bin/java"
+command_args="-jar /opt/vynk/backend/vynk.jar"
+command_user="vynk:vynk"
+command_background="yes"
+pidfile="/run/${RC_SVCNAME}.pid"
+
+: ${VYNK_HOME:=/var/lib/vynk}
+: ${VYNK_CONFIG:=/etc/vynk/vynk.env}
+
+# Load deployment-specific settings without requiring a shell wrapper.
+if [ -r "${VYNK_CONFIG}" ]; then
+    set -a
+    . "${VYNK_CONFIG}"
+    set +a
+fi
+
+export VYNK_HOME
+export SPRING_CONFIG_ADDITIONAL_LOCATION="file:/etc/vynk/"
+
+start_pre() {
+    checkpath --directory --owner vynk:vynk --mode 0750 "${VYNK_HOME}"
+    checkpath --directory --owner vynk:vynk --mode 0750 /run
+}

@@ -35,3 +35,9 @@ fails, enable branch protection for `main` and require the **Quality** status ch
 - No Docker, no separate PostgreSQL. Frontend served by NGINX in deployment; backend is an OpenRC service on Alpine.
 - Auth is session-cookie + CSRF; SSE for notifications/messages (REST fallback/reconnect).
 - See `PROJECT_PLAN.md` for full decisions and constraints and `TICKETS.md` for the delivery backlog.
+
+## Alpine deployment
+
+Deployment is manual; CI does not publish or deploy artifacts. Build the backend JAR and frontend distribution, then transfer both to the Alpine host. Install the service/configuration once with `deploy/alpine/scripts/install-service.sh`, configure `/etc/vynk/vynk.env`, and provision NGINX/TLS using `deploy/alpine/nginx/vynk.conf`. Keep the backend loopback-only and the environment file root-readable only.
+
+Deploy as root with `deploy/alpine/scripts/deploy-release.sh VERSION /path/to/vynk.jar /path/to/browser-dist`. The script retains versioned artifacts under `/opt/vynk/releases`, switches the service JAR and frontend root, restarts OpenRC, and gates success on the local Actuator health endpoint. On failure, it restores the previously active links and restarts the service. To manually restore a retained release, run `deploy/alpine/scripts/rollback-release.sh VERSION`. Keep old release directories until the new version is verified; these scripts do not remove releases or replace database backup/migration procedures.

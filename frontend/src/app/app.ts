@@ -2,6 +2,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -25,6 +26,7 @@ const MOBILE_BREAKPOINT = '(max-width: 899px)';
     MatDividerModule,
     MatListModule,
     MatSidenavModule,
+    MatSnackBarModule,
     MatToolbarModule,
     RouterLink,
     RouterLinkActive,
@@ -37,6 +39,7 @@ export class App {
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  private readonly snackBar = inject(MatSnackBar);
   protected readonly auth = inject(AuthService);
 
   protected readonly isHandset = toSignal(
@@ -45,6 +48,7 @@ export class App {
   );
 
   protected readonly menuOpen = signal(false);
+  protected readonly isOffline = signal(typeof navigator !== 'undefined' && !navigator.onLine);
 
   protected readonly navItems: readonly NavItem[] = [
     {
@@ -75,12 +79,40 @@ export class App {
   ];
 
   constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('offline', this.handleOffline);
+      window.addEventListener('online', this.handleOnline);
+      this.destroyRef.onDestroy(() => {
+        window.removeEventListener('offline', this.handleOffline);
+        window.removeEventListener('online', this.handleOnline);
+      });
+      if (this.isOffline()) this.showOfflineMessage();
+    }
+
     this.router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => this.menuOpen.set(false));
+  }
+
+  private readonly handleOffline = (): void => {
+    this.isOffline.set(true);
+    this.showOfflineMessage();
+  };
+
+  private readonly handleOnline = (): void => {
+    this.isOffline.set(false);
+    this.snackBar.open('You are back online.', 'Dismiss', { duration: 4000 });
+  };
+
+  private showOfflineMessage(): void {
+    this.snackBar.open(
+      'You are offline. Changes and account actions need an internet connection.',
+      'Dismiss',
+      { duration: 7000 },
+    );
   }
 
   protected toggleMenu(): void {

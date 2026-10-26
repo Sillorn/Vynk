@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { catchError, map, of, tap } from 'rxjs';
+import { catchError, of, tap } from 'rxjs';
 
 export interface SessionUser {
   readonly username: string;

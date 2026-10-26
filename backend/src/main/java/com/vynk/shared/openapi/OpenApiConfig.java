@@ -1,9 +1,8 @@
 package com.vynk.shared.openapi;
 
-import java.math.BigDecimal;
-import java.util.Arrays;
-
+import com.vynk.shared.api.PageResponse;
 import com.vynk.shared.error.ApiErrorCode;
+import com.vynk.shared.error.FieldViolation;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -13,6 +12,8 @@ import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import java.math.BigDecimal;
+import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

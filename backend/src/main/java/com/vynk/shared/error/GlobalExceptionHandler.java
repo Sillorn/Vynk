@@ -1,13 +1,12 @@
 package com.vynk.shared.error;
 
+import com.vynk.shared.tracing.TraceIds;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import com.vynk.shared.tracing.TraceIds;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSourceResolvable;

@@ -1,7 +1,6 @@
 package com.vynk.shared.error;
 
 import java.net.URI;
-
 import org.springframework.http.HttpStatus;
 
 /**

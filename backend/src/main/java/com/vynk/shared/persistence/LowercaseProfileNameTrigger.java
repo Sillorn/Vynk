@@ -2,7 +2,6 @@ package com.vynk.shared.persistence;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-
 import org.h2.api.Trigger;
 
 public class LowercaseProfileNameTrigger implements Trigger {

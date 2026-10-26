@@ -102,6 +102,10 @@ export class PublicProfilePage {
     return fullName(profile);
   }
 
+  protected cvUrl(profile: PublicProfile): string {
+    return `/api/v1/profiles/${encodeURIComponent(profile.username)}/cv`;
+  }
+
   protected period(start?: string | null, end?: string | null, current = false): string {
     return period(start, end, current);
   }

@@ -1,10 +1,9 @@
 package com.vynk.profiles;
 
-import java.time.LocalDate;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Public, privacy-safe representation of a professional profile.
