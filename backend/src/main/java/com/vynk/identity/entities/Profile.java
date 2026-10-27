@@ -1,6 +1,5 @@
 package com.vynk.identity.entities;
 
-import com.vynk.identity.entities.UserAccount;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

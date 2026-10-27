@@ -94,7 +94,18 @@ export class App {
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(() => this.menuOpen.set(false));
+      .subscribe((event) => {
+        this.menuOpen.set(false);
+        const url = event.urlAfterRedirects;
+        const publicPaths = ['/feed', '/login', '/register'];
+        if (
+          !this.auth.loading() &&
+          !this.auth.user() &&
+          !publicPaths.some((path) => url === path || url.startsWith(`${path}/`))
+        ) {
+          void this.router.navigateByUrl('/feed');
+        }
+      });
   }
 
   private readonly handleOffline = (): void => {

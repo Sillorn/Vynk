@@ -1,6 +1,5 @@
 package com.vynk.messaging.entities;
 
-import com.vynk.messaging.entities.ConversationMessage;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

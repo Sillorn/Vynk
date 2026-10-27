@@ -29,6 +29,7 @@ export class RegisterPage {
   protected readonly form = this.fb.nonNullable.group({
     username: ['', [Validators.required, usernameValidator()]],
     password: ['', [Validators.required, Validators.minLength(12)]],
+    confirmPassword: ['', [Validators.required]],
     firstName: ['', [Validators.required, Validators.maxLength(100)]],
     lastName: ['', [Validators.required, Validators.maxLength(100)]],
     headline: ['', [Validators.required, Validators.maxLength(200)]],
@@ -43,9 +44,15 @@ export class RegisterPage {
       this.form.markAllAsTouched();
       return;
     }
+    const { confirmPassword, ...registration } = this.form.getRawValue();
+    if (registration.password !== confirmPassword) {
+      this.form.controls.confirmPassword.setErrors({ mismatch: true });
+      this.form.controls.confirmPassword.markAsTouched();
+      return;
+    }
     this.submitting.set(true);
     this.error.set(null);
-    this.auth.register(this.form.getRawValue()).subscribe({
+    this.auth.register(registration).subscribe({
       next: () => {
         this.submitting.set(false);
         this.router.navigateByUrl('/feed');

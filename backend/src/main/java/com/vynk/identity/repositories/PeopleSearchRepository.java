@@ -1,8 +1,6 @@
 package com.vynk.identity.repositories;
 
-import com.vynk.identity.UserAccountStatus;
 import com.vynk.identity.entities.Profile;
-import com.vynk.profiles.entities.ProfileSkill;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

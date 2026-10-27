@@ -344,7 +344,7 @@
 ### PN-048 — Messaging integration, SSE and authorization tests
 
 - **Priority:** P1 · **Relative size:** 8 points · **Decision:** PROPOSED
-- **Depends on:** PN-039, PN-040, PN-041, PN-042, PN-043, PN-044, PN-045, PN-046, PN-047
+- **Depends on:** PN-039, PN-040, PN-041, PN-042, PN-043, PN-044, PN-045, PN-046
 - **Acceptance criteria:** Two-user messaging and third-party denial, disconnect, reconnect, reload pass.
 - **Done when:** Automated checks appropriate to the change pass, errors and security cases are covered, and CI is green.
 

@@ -2,6 +2,7 @@ package com.vynk.shared.error;
 
 import com.vynk.shared.tracing.TraceIds;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -207,8 +208,16 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    ResponseEntity<ProblemDetail> handleUnexpected(Exception exception, HttpServletRequest request) {
+    ResponseEntity<ProblemDetail> handleUnexpected(
+            Exception exception, HttpServletRequest request, HttpServletResponse response) {
         log.error("Unhandled request failure", exception);
+        // Handler mappings for SSE set text/event-stream before the controller runs. If that
+        // request fails before the stream is committed, clear the negotiated type so the
+        // standard RFC 9457 response can be serialized as application/problem+json.
+        if (!response.isCommitted()
+                && MediaType.TEXT_EVENT_STREAM_VALUE.equals(response.getContentType())) {
+            response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        }
         return respond(ApiErrorCode.INTERNAL_ERROR, UNEXPECTED_ERROR_DETAIL, request, List.of());
     }
 

@@ -1,6 +1,5 @@
 package com.vynk.connections.controllers;
 
-import com.vynk.connections.controllers.ConnectionApi;
 import com.vynk.connections.services.ConnectionService;
 import com.vynk.shared.api.ApiPaths;
 import com.vynk.shared.error.ApiException;

@@ -46,19 +46,19 @@ PN-044,M4,Story,Implement conversation hide/disconnect lifecycle,P1,5,"PN-038, P
 PN-045,M4,Story,Model and expose persistent notifications,P1,5,"PN-008, PN-035",Notifications stored and paginated; mark read; private recipient only,CONFIRMED,Done
 PN-046,M4,Story,Build notification center and unread indicators,P1,5,"PN-004, PN-046, PN-042",Notifications accessible and counts update via SSE; no push/email,CONFIRMED,Done
 PN-047,M4,Task,Add idempotent message retry and notification policies,P1,5,"PN-039, PN-046",Same client request ID does not duplicate send; accepted notification events documented,PROPOSED,Backlog
-PN-048,M4,Story,"Messaging integration, SSE and authorization tests",P1,8,"PN-039, PN-040, PN-041, PN-042, PN-043, PN-044, PN-045, PN-046, PN-047","Two-user messaging and third-party denial, disconnect, reconnect, reload pass",PROPOSED,Backlog
+PN-048,M4,Story,"Messaging integration, SSE and authorization tests",P1,8,"PN-039, PN-040, PN-041, PN-042, PN-043, PN-044, PN-045, PN-046","Two-user messaging and third-party denial, disconnect, reconnect, reload pass",PROPOSED,Ignore
 PN-049,M5,Task,Configure PWA app shell and installability,P1,5,"PN-002, PN-004","Manifest, icons, SW; installable HTTPS; API and SSE never cached",CONFIRMED,Done
 PN-050,M5,Story,Implement PWA update and offline UX,P1,3,PN-049,"Update prompt; offline shell loads, authenticated actions report no network",CONFIRMED,Done
-PN-051,M5,Task,Finalize frontend state and error treatment,P1,5,"PN-029, PN-031, PN-033, PN-040, PN-047",All major views have consistent loading empty error retry states and navigation,CONFIRMED,Backlog
-PN-052,M5,Story,Accessibility audit and fixes,P1,5,"PN-020, PN-021, PN-029, PN-031, PN-033, PN-040, PN-047","WCAG2.2 AA checks, keyboard tests and contrast/a11y regression work",CONFIRMED,Backlog
-PN-053,M5,Story,Security hardening and abuse test suite,P1,8,"PN-016, PN-026, PN-037, PN-048","CSRF, session theft mitigation, authorization, rate limits, output escaping, cache privacy tests",CONFIRMED,Backlog
-PN-054,M5,Task,Add performance / capacity smoke scenarios,P1,3,"PN-037, PN-048","Bounded feeds and connections, H2 and SSE resource tests with baseline reported",CONFIRMED,Backlog
+PN-051,M5,Task,Finalize frontend state and error treatment,P1,5,"PN-029, PN-031, PN-033, PN-040, PN-047",All major views have consistent loading empty error retry states and navigation,CONFIRMED,Done
+PN-052,M5,Story,Accessibility audit and fixes,P1,5,"PN-020, PN-021, PN-029, PN-031, PN-033, PN-040, PN-047","WCAG2.2 AA checks, keyboard tests and contrast/a11y regression work",CONFIRMED,Done
+PN-053,M5,Story,Security hardening and abuse test suite,P1,8,"PN-016, PN-026, PN-037, PN-048","CSRF, session theft mitigation, authorization, rate limits, output escaping, cache privacy tests",CONFIRMED,Done
+PN-054,M5,Task,Add performance / capacity smoke scenarios,P1,3,"PN-037, PN-048","Bounded feeds and connections, H2 and SSE resource tests with baseline reported",CONFIRMED,Ignore
 PN-055,M5,Task,Confirm proposed Round 8 behavior defaults,P1,2,"PN-016, PN-026, PN-037, PN-048",Product owner chooses Q116-137 defaults; amended tickets and acceptance cases linked,PROPOSED,Backlog
-PN-056,M5,Story,Final integration E2E regression suite,P1,8,"PN-050, PN-051, PN-052, PN-053, PN-054, PN-055",Critical anonymous/public/user/network/message/CV/PWA journeys automated,CONFIRMED,Backlog
+PN-056,M5,Story,Final integration E2E regression suite,P1,8,"PN-050, PN-051, PN-052, PN-053, PN-054, PN-055",Critical anonymous/public/user/network/message/CV/PWA journeys automated,CONFIRMED,Ignore
 PN-057,M6,Task,Create Alpine NGINX HTTPS deployment config,P1,5,"PN-003, PN-049",TLS redirects; same-origin /api proxy; restricted backend; SSE buffering disabled,CONFIRMED,Done
 PN-058,M6,Story,Package backend and OpenRC non-root service,P1,5,"PN-003, PN-008","Java 25 runtime validated on Alpine, env config, writable data directory, start/restart works",CONFIRMED,Done
 PN-059,M6,Story,Implement manual deployment and rollback scripts,P1,5,"PN-057, PN-058","Versioned artifact install, health gating, service restart, frontend publish, rollback documented",CONFIRMED,Done
 PN-060,M6,Story,Implement and verify H2 online backup restore,P1,5,"PN-008, PN-058",Consistent backup while running; restore tested offline; migrate only after backup,CONFIRMED,Done
-PN-061,M6,Story,Provide demo data fixtures and sanitization,P1,5,"PN-009, PN-017, PN-027, PN-034, PN-038",Idempotent fictional users/posts/connections/conversations; no default production seed,CONFIRMED,Backlog
-PN-062,M6,Task,Complete minimal README and handoff checklist,P1,3,"PN-059, PN-060, PN-061","Setup, test, deployment, recovery, security notes short and accurate",CONFIRMED,Backlog
+PN-061,M6,Story,Provide demo data fixtures and sanitization,P1,5,"PN-009, PN-017, PN-027, PN-034, PN-038",Idempotent fictional users/posts/connections/conversations; no default production seed,CONFIRMED,Done
+PN-062,M6,Task,Complete minimal README and handoff checklist,P1,3,"PN-059, PN-060, PN-061","Setup, test, deployment, recovery, security notes short and accurate",CONFIRMED,Done
 PN-063,M6,Task,Perform target-host final verification and release,P1,8,"PN-056, PN-057, PN-058, PN-059, PN-060, PN-061, PN-062","Alpine end-to-end smoke, CV font validation, TLS cookies, SSE, service restart, backup restore verified",CONFIRMED,Backlog

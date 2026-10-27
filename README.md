@@ -34,7 +34,7 @@ fails, enable branch protection for `main` and require the **Quality** status ch
 ## Notes
 - No Docker, no separate PostgreSQL. Frontend served by NGINX in deployment; backend is an OpenRC service on Alpine.
 - Auth is session-cookie + CSRF; SSE for notifications/messages (REST fallback/reconnect).
-- See `PROJECT_PLAN.md` for full decisions and constraints and `TICKETS.md` for the delivery backlog.
+- See `PROJECT_PLAN.md` for full decisions, `TICKETS.md` for the delivery backlog, and [`docs/handoff.md`](docs/handoff.md) for setup, release, backup/recovery, and operator security guidance.
 
 ## Alpine deployment
 

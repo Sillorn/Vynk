@@ -15,6 +15,7 @@
     </a>
 
     @if (isHandset()) {
+    @if (!isOffline()) {
     <span class="toolbar-spacer"></span>
     <button
       type="button"
@@ -28,9 +29,11 @@
         <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
       </svg>
     </button>
+    }
     } @else {
     <nav class="primary-nav" aria-label="Primary">
       @for (item of navItems; track item.path) {
+      @if (auth.user() || item.path === '/feed') {
       <a
         class="nav-link"
         [routerLink]="item.path"
@@ -43,17 +46,20 @@
         <span>{{ item.label }}</span>
       </a>
       }
+      }
     </nav>
 
     <span class="toolbar-spacer"></span>
 
     <div class="toolbar-actions">
+      @if (!isOffline()) {
       @if (auth.user(); as user) {
       <span class="user-chip">{{ user.username }}</span>
       <button matButton type="button" (click)="logout()">Sign out</button>
       } @else {
       <a matButton routerLink="/login">Sign in</a>
       <a matButton="filled" routerLink="/register">Create account</a>
+      }
       }
     </div>
     }
@@ -73,6 +79,7 @@
     <nav class="mobile-nav" aria-label="Primary">
       <mat-nav-list>
         @for (item of navItems; track item.path) {
+        @if (auth.user() || item.path === '/feed') {
         <a
           mat-list-item
           [routerLink]="item.path"
@@ -85,6 +92,7 @@
           </svg>
           <span matListItemTitle>{{ item.label }}</span>
         </a>
+        }
         }
       </mat-nav-list>
 

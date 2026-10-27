@@ -1,8 +1,6 @@
 package com.vynk.social.entities;
 
 import com.vynk.identity.entities.UserAccount;
-import com.vynk.social.entities.Post;
-import com.vynk.social.entities.PostLikeId;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;

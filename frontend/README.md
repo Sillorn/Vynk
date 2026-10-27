@@ -10,7 +10,7 @@ To start a local development server, run:
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Once the server is running, open your browser and navigate to `http://localhost:4200/`. The development server proxies `/api/**` requests to the backend at `http://127.0.0.1:8080`, so start the backend as well. Restart `ng serve` after changing proxy settings. The application will automatically reload whenever you modify any of the source files.
 
 ## Code scaffolding
 

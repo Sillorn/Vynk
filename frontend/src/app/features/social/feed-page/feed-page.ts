@@ -236,6 +236,9 @@ import {
         border-bottom: 1px solid #d8dee6;
         margin-bottom: 1rem;
       }
+      .feed-tabs button {
+        border-radius: 0.25rem;
+      }
       .feed-tabs .active {
         border-bottom: 2px solid currentColor;
       }

@@ -1,6 +1,5 @@
 package com.vynk.cv.services;
 
-import com.vynk.identity.entities.Profile;
 import com.vynk.profiles.PublicProfileResponse;
 import com.vynk.profiles.services.ProfileService;
 import java.io.ByteArrayOutputStream;
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Service;
 public class CvPdfService {
     private static final float MARGIN =  fifty();
     private static final float FONT_SIZE = 10;
-    private static final float LEADING = 15;
 
     private final ProfileService profiles;
 

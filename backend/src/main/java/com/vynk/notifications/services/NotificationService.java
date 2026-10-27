@@ -1,10 +1,7 @@
 package com.vynk.notifications.services;
 
 import com.vynk.notifications.controllers.NotificationApi;
-import com.vynk.notifications.entities.Notification;
 import com.vynk.notifications.repositories.NotificationRepository;
-import com.vynk.shared.api.PageQuery;
-import com.vynk.shared.api.PageResponse;
 import com.vynk.shared.api.PageQuery;
 import com.vynk.shared.api.PageResponse;
 import com.vynk.shared.error.ApiException;

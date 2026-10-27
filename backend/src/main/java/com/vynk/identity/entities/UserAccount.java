@@ -1,8 +1,6 @@
 package com.vynk.identity.entities;
 
 import com.vynk.identity.UserAccountStatus;
-import com.vynk.identity.entities.Profile;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

@@ -1,6 +1,5 @@
 package com.vynk.shared.security;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,7 +32,7 @@ public class SecurityConfig {
         csrfTokenRepository.setCookiePath("/");
         csrfTokenRepository.setCookieCustomizer(cookie -> {
             cookie.sameSite("Lax");
-            cookie.secure(false); // allow local dev over http
+            cookie.secure(Boolean.parseBoolean(System.getenv().getOrDefault("VYNK_COOKIE_SECURE", "false")));
         });
 
         CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
@@ -55,6 +54,11 @@ public class SecurityConfig {
                         })
                         .xssProtection(xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.DISABLED))
                         .frameOptions(frame -> frame.deny())
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000)
+                                .requestMatcher(request -> Boolean.parseBoolean(
+                                        System.getenv().getOrDefault("VYNK_COOKIE_SECURE", "false"))))
                         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
                         .permissionsPolicyHeader(permissions -> permissions.policy(
                                 "camera=(), microphone=(), geolocation=()")))

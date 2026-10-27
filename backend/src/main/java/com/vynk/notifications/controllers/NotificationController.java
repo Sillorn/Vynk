@@ -1,6 +1,5 @@
 package com.vynk.notifications.controllers;
 
-import com.vynk.notifications.controllers.NotificationApi;
 import com.vynk.notifications.services.NotificationService;
 import com.vynk.shared.api.ApiPaths;
 import com.vynk.shared.api.PageQuery;

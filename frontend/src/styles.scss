@@ -43,9 +43,9 @@ html {
 :root {
   --app-content-max-width: 1120px;
   --app-gutter: clamp(1rem, 2.5vw, 2rem);
-  --app-radius-sm: 0.5rem;
-  --app-radius-md: 0.75rem;
-  --app-radius-lg: 1rem;
+  --app-radius-sm: 0.25rem;
+  --app-radius-md: 0.375rem;
+  --app-radius-lg: 0.5rem;
   --app-focus-ring: 3px;
 }
 
@@ -97,6 +97,11 @@ p {
 
 a {
   color: var(--mat-sys-primary);
+}
+
+button,
+.mat-mdc-button-base {
+  border-radius: var(--app-radius-sm);
 }
 
 img,

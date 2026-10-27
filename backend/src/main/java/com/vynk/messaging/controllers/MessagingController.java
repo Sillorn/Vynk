@@ -1,6 +1,5 @@
 package com.vynk.messaging.controllers;
 
-import com.vynk.messaging.controllers.MessagingApi;
 import com.vynk.messaging.services.MessagingService;
 import com.vynk.shared.api.ApiPaths;
 import com.vynk.shared.api.PageQuery;

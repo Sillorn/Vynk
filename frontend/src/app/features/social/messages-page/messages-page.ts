@@ -45,6 +45,7 @@ import {
                   class="inbox-item"
                   type="button"
                   [class.selected]="selected()?.conversationId === item.conversationId"
+                  [attr.aria-pressed]="selected()?.conversationId === item.conversationId"
                   (click)="open(item)"
                 >
                   <span class="inbox-item__name"
@@ -78,6 +79,16 @@ import {
               @if (loadingMessages()) {
                 <p role="status">Loading messages…</p>
               }
+              @if (historyError()) {
+                <div class="error" role="alert">
+                  <p>{{ historyError() }}</p>
+                  <button mat-button type="button" (click)="retryHistory()">Try again</button>
+                </div>
+              } @else if (!loadingMessages() && !messages().length) {
+                <p class="muted">
+                  No messages yet. Send the first message to start this conversation.
+                </p>
+              }
               @if (hasOlder()) {
                 <button
                   mat-button
@@ -88,7 +99,7 @@ import {
                   Load older messages
                 </button>
               }
-              <ol class="message-list" aria-label="Messages" aria-live="polite">
+              <ol class="message-list" aria-label="Messages" role="log" aria-live="polite">
                 @for (message of messages(); track message.id) {
                   <li [class.own]="message.senderUsername === auth.user()?.username">
                     <span>{{
@@ -286,6 +297,7 @@ export class MessagesPage {
   protected readonly sending = signal(false);
   protected readonly hasOlder = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly historyError = signal<string | null>(null);
   protected draft = '';
   private page = 0;
 
@@ -330,8 +342,13 @@ export class MessagesPage {
   }
 
   protected loadOlder(): void {
+    if (this.loadingMessages() || !this.hasOlder()) return;
     this.page++;
     this.fetchMessages(true);
+  }
+
+  protected retryHistory(): void {
+    this.fetchMessages(this.page > 0);
   }
 
   protected hideSelected(): void {
@@ -373,6 +390,7 @@ export class MessagesPage {
     const item = this.selected();
     if (!item) return;
     this.loadingMessages.set(true);
+    this.historyError.set(null);
     this.service.history(item.conversationId, this.page).subscribe({
       next: (response) => {
         this.messages.update((current) => {
@@ -395,7 +413,11 @@ export class MessagesPage {
         });
       },
       error: (err) => {
-        this.fail(err);
+        this.historyError.set(
+          err.status === 0
+            ? 'Unable to reach the service. Try again.'
+            : (err.error?.detail ?? 'Unable to load messages.'),
+        );
         this.loadingMessages.set(false);
       },
     });
