@@ -1,4 +1,5 @@
 import { Component, HostListener, inject, signal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ProfileService } from '../../../core/profiles/profile.service';
 import { PublicProfile } from '../../../core/profiles/profile.models';
@@ -6,7 +7,7 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
 @Component({
   selector: 'app-profile-editor',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [MatButtonModule, ReactiveFormsModule],
   template: `
     <main class="page editor">
       <h1>Edit your profile</h1>
@@ -37,10 +38,16 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
                         <input [type]="fieldType(field)" [formControlName]="field.key" />
                       </label>
                     }
-                    <button type="button" (click)="remove(section.key, i)" [disabled]="saving()">
+                    <button
+                      matButton="filled"
+                      type="button"
+                      (click)="remove(section.key, i)"
+                      [disabled]="saving()"
+                    >
                       Remove
                     </button>
                     <button
+                      matButton="filled"
                       type="button"
                       (click)="move(section.key, i, -1)"
                       [disabled]="i === 0 || saving()"
@@ -48,6 +55,7 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
                       Move up
                     </button>
                     <button
+                      matButton="filled"
                       type="button"
                       (click)="move(section.key, i, 1)"
                       [disabled]="i === array(section.key).length - 1 || saving()"
@@ -57,15 +65,23 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
                   </div>
                 }
               </div>
-              <button type="button" (click)="add(section.key)" [disabled]="saving()">
+              <button
+                class="editor-action"
+                matButton="filled"
+                type="button"
+                (click)="add(section.key)"
+                [disabled]="saving()"
+              >
                 Add {{ section.item }}
               </button>
             </fieldset>
           }
-          <button type="submit" [disabled]="form.invalid || saving()">
+          <button matButton="filled" type="submit" [disabled]="form.invalid || saving()">
             {{ saving() ? 'Saving…' : 'Save all changes' }}
           </button>
-          <button type="button" (click)="cancel()" [disabled]="saving()">Cancel changes</button>
+          <button matButton="filled" type="button" (click)="cancel()" [disabled]="saving()">
+            Cancel changes
+          </button>
         </form>
       }
     </main>
@@ -89,6 +105,14 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
         border: 1px solid #bbb;
         border-radius: 0.5rem;
         padding: 1rem;
+      }
+      button[matButton='filled'],
+      .editor-action {
+        --mat-button-filled-container-color: #1769aa;
+        --mat-button-filled-label-text-color: #fff;
+        background-color: #1769aa !important;
+        border-radius: 999px;
+        color: #fff !important;
       }
       .row {
         display: flex;

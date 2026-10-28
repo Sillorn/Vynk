@@ -84,8 +84,10 @@
 
 .user-chip {
   margin-right: 0.5rem;
-  font-weight: 500;
-  color: var(--mat-sys-on-surface-variant);
+  font-weight: 600;
+  color: var(--mat-sys-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .primary-nav {
