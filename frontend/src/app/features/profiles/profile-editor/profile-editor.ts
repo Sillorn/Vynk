@@ -39,6 +39,7 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
                       </label>
                     }
                     <button
+                      class="remove-action"
                       matButton="filled"
                       type="button"
                       (click)="remove(section.key, i)"
@@ -76,12 +77,20 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
               </button>
             </fieldset>
           }
-          <button matButton="filled" type="submit" [disabled]="form.invalid || saving()">
-            {{ saving() ? 'Saving…' : 'Save all changes' }}
-          </button>
-          <button matButton="filled" type="button" (click)="cancel()" [disabled]="saving()">
-            Cancel changes
-          </button>
+          <div class="editor-actions">
+            <button matButton="filled" type="submit" [disabled]="form.invalid || saving()">
+              {{ saving() ? 'Saving…' : 'Save all changes' }}
+            </button>
+            <button
+              class="remove-action"
+              matButton="filled"
+              type="button"
+              (click)="cancel()"
+              [disabled]="saving()"
+            >
+              Cancel changes
+            </button>
+          </div>
         </form>
       }
     </main>
@@ -108,11 +117,20 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
       }
       button[matButton='filled'],
       .editor-action {
-        --mat-button-filled-container-color: #1769aa;
-        --mat-button-filled-label-text-color: #fff;
-        background-color: #1769aa !important;
+        --mat-button-filled-container-color: var(--mat-sys-primary);
+        --mat-button-filled-label-text-color: var(--mat-sys-on-primary);
+        min-height: 2.25rem;
+        padding-inline: 0.75rem;
         border-radius: 999px;
-        color: #fff !important;
+      }
+      .editor-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+      button.remove-action {
+        --mat-button-filled-container-color: var(--mat-sys-error);
+        --mat-button-filled-label-text-color: var(--mat-sys-on-error);
       }
       .row {
         display: flex;
