@@ -55,6 +55,17 @@ public class MessagingService {
             throw ApiException.forbidden("Messaging requires an accepted connection.");
         }
 
+        var prior = messages.findBySenderIdAndClientRequestId(actor.getId(), request.clientRequestId());
+        if (prior.isPresent()) {
+            ConversationMessage existing = prior.get();
+            if (!existing.getConversation().getUserLowId().equals(low)
+                    || !existing.getConversation().getUserHighId().equals(high)
+                    || !existing.getBody().equals(request.body().trim())) {
+                throw ApiException.conflict("Client request ID was already used for a different message.");
+            }
+            return MessagingApi.MessageResponse.from(existing, actor.getUsername());
+        }
+
         Conversation conversation = conversations.findByUserLowIdAndUserHighId(low, high).orElseGet(() -> {
             Conversation created = conversations.saveAndFlush(new Conversation(low, high));
             states.save(new ConversationUserState(created.getId(), low));
@@ -62,7 +73,7 @@ public class MessagingService {
             return created;
         });
         ConversationMessage saved = messages.saveAndFlush(
-                new ConversationMessage(conversation, actor.getId(), request.body().trim()));
+                new ConversationMessage(conversation, actor.getId(), request.body().trim(), request.clientRequestId()));
         states.findByConversationIdAndUserId(conversation.getId(), actor.getId())
                 .ifPresent(state -> state.setHidden(false));
         states.findByConversationIdAndUserId(conversation.getId(), target.getId())

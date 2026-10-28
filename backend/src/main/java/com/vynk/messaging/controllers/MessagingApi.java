@@ -2,14 +2,17 @@ package com.vynk.messaging.controllers;
 
 import com.vynk.messaging.entities.ConversationMessage;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.UUID;
 
 public final class MessagingApi {
     private MessagingApi() {}
 
     public record SendMessageRequest(
-            @NotBlank @Size(max = 5000) String body) {}
+            @NotBlank @Size(max = 5000) String body,
+            @NotNull UUID clientRequestId) {}
 
     public record InboxItem(long conversationId, long participantId, String participantUsername,
                             MessageResponse latestMessage, long unreadCount) {}

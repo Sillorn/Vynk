@@ -45,7 +45,7 @@ PN-043,M4,Story,Implement SSE reconnection and reconciliation,P1,5,"PN-040, PN-0
 PN-044,M4,Story,Implement conversation hide/disconnect lifecycle,P1,5,"PN-038, PN-039, PN-040",History retained after disconnect; new sends blocked; per-user hide separate,CONFIRMED,Done
 PN-045,M4,Story,Model and expose persistent notifications,P1,5,"PN-008, PN-035",Notifications stored and paginated; mark read; private recipient only,CONFIRMED,Done
 PN-046,M4,Story,Build notification center and unread indicators,P1,5,"PN-004, PN-046, PN-042",Notifications accessible and counts update via SSE; no push/email,CONFIRMED,Done
-PN-047,M4,Task,Add idempotent message retry and notification policies,P1,5,"PN-039, PN-046",Same client request ID does not duplicate send; accepted notification events documented,PROPOSED,Backlog
+PN-047,M4,Task,Add idempotent message retry and notification policies,P1,5,"PN-039, PN-046",Same client request ID does not duplicate send; accepted notification events documented,CONFIRMED,Done
 PN-048,M4,Story,"Messaging integration, SSE and authorization tests",P1,8,"PN-039, PN-040, PN-041, PN-042, PN-043, PN-044, PN-045, PN-046","Two-user messaging and third-party denial, disconnect, reconnect, reload pass",PROPOSED,Backlog
 PN-049,M5,Task,Configure PWA app shell and installability,P1,5,"PN-002, PN-004","Manifest, icons, SW; installable HTTPS; API and SSE never cached",CONFIRMED,Done
 PN-050,M5,Story,Implement PWA update and offline UX,P1,3,PN-049,"Update prompt; offline shell loads, authenticated actions report no network",CONFIRMED,Done

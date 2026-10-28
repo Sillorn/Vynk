@@ -337,7 +337,7 @@
 
 ### PN-047 — Add idempotent message retry and notification policies
 
-- **Priority:** P1 · **Relative size:** 5 points · **Decision:** PROPOSED
+- **Priority:** P1 · **Relative size:** 5 points · **Decision:** CONFIRMED
 - **Depends on:** PN-039, PN-046
 - **Acceptance criteria:** Same client request ID does not duplicate send; accepted notification events documented.
 - **Done when:** Automated checks appropriate to the change pass, errors and security cases are covered, and CI is green.
