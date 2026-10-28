@@ -35,7 +35,7 @@ PN-033,M3,Story,Build people directory and search UI,P1,5,"PN-004, PN-032","Sear
 PN-034,M3,Story,Model connection request lifecycle and integrity,P1,5,"PN-008, PN-009",Directed pending request and canonical accepted pair; no duplicates/self connections,CONFIRMED,Done
 PN-035,M3,Story,Implement connection-request and accepted-network APIs,P1,5,"PN-034, PN-014",Send cancel accept decline disconnect; only eligible actor; status conflicts handled,CONFIRMED,Done
 PN-036,M3,Story,Build network invitations and connection screens,P1,5,"PN-004, PN-035","Pending incoming/outgoing and accepted connections, relevant actions/feedback",CONFIRMED,Done
-PN-037,M3,Story,Test posts network search and permissions,P1,5,"PN-028, PN-030, PN-032, PN-033, PN-035, PN-036",Cross-user workflows; direct endpoint abuse; pagination and cascade checks,CONFIRMED,Backlog
+PN-037,M3,Story,Test posts network search and permissions,P1,5,"PN-028, PN-030, PN-032, PN-033, PN-035, PN-036",Cross-user workflows; direct endpoint abuse; pagination and cascade checks,CONFIRMED,Done
 PN-038,M4,Story,Model conversations messages and per-user state,P1,5,"PN-008, PN-034",Unique unordered pair; read pointer; hidden state; messages immutable,CONFIRMED,Done
 PN-039,M4,Story,Implement message send and history APIs,P1,8,"PN-038, PN-014, PN-035",Accepted connection required; persist before event; newest messages with older paging,CONFIRMED,Done
 PN-040,M4,Story,Build inbox and conversation UI,P1,8,"PN-004, PN-039","List sorted by latest, read/unread states, send and load older messages",CONFIRMED,Done

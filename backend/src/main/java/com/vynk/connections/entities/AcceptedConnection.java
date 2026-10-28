@@ -5,6 +5,7 @@ import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
 import java.io.Serializable;
 import java.time.Instant;
 
@@ -14,7 +15,8 @@ public class AcceptedConnection {
     @EmbeddedId
     private Key id;
 
-    @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     protected AcceptedConnection() {}
