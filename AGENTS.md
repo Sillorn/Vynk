@@ -36,5 +36,4 @@
 - Do not add Docker/Postgres/admin/email flows — see `PROJECT_PLAN.md` for boundaries.
 - Follow existing package structure by feature (`identity`, `auth`, `shared/*`, etc.). Use the RFC 9457 error model for API errors.
 - Tickets in `TICKETS.md`/`PROJECT_PLAN.md` are the roadmap; only implement what's asked for. `PROPOSED` tickets need approval.
-- This is a demo, do not create or run test, update Status to "Ignore" in @TICKETS.csv when test only tickets. Only check if maven build is ok.
 - Once ticket is done, update Status to "Done" in @TICKETS.csv

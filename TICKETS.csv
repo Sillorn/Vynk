@@ -14,7 +14,7 @@ PN-012,M1,Story,Build registration/login/logout Angular views,P0,5,"PN-004, PN-0
 PN-013,M1,Story,Implement user settings password update and deletion,P0,5,"PN-010, PN-011",Current-password verification; logout; confirmed transactional account deletion; backend tests,CONFIRMED,Done
 PN-014,M1,Story,Enforce authorization and data ownership,P0,5,"PN-010, PN-011",403 or privacy-preserving 404 for unauthorized operations; anonymous private access denied,CONFIRMED,Done
 PN-015,M1,Story,Implement auth throttling and security headers,P0,3,"PN-010, PN-011",Login and registration rate limited; secure headers; private information excluded from logs,CONFIRMED,Done
-PN-016,M1,Story,Build auth integration and browser E2E coverage,P0,5,"PN-012, PN-013, PN-014, PN-015","Register/login/logout, CSRF, expired session, password change, delete tested",CONFIRMED,Ignore
+PN-016,M1,Story,Complete auth API integration coverage,P0,3,"PN-012, PN-013, PN-014, PN-015","API tests cover registration, login/logout, CSRF, invalid session, password change and account deletion/session invalidation; browser E2E deferred to PN-056 review",CONFIRMED,Done
 PN-017,M2,Story,Design full structured profile schema,P1,5,PN-009,Experience education certifications projects skills languages links dates and ordering migrated,CONFIRMED,Done
 PN-018,M2,Story,Implement public profile read endpoints,P1,3,"PN-017, PN-014",Public DTO hides private data; profile by immutable username; optional empty sections omitted,CONFIRMED,Done
 PN-019,M2,Story,Implement profile section edit REST endpoints,P1,5,"PN-017, PN-014","Owner-only CRUD, explicit save, validation for dates and lengths, ordering supported",CONFIRMED,Done
@@ -24,7 +24,7 @@ PN-022,M2,Story,Build professional experience/education workflows,P1,5,"PN-019, 
 PN-023,M2,Story,Build skills languages certifications projects workflows,P1,5,"PN-019, PN-021","Structured editing, safe links, language proficiency, list ordering pass",CONFIRMED,Done
 PN-024,M2,Story,Implement on-demand ATS-friendly PDF CV service,P1,8,PN-018,Public PDF single-column multipage; no private/social data; Unicode and links validated,CONFIRMED,Done
 PN-025,M2,Story,Expose CV endpoint and download UI,P1,3,"PN-020, PN-024",Public download with proper headers and filename; failure states handled,CONFIRMED,Done
-PN-026,M2,Story,Test profiles CV and ownership end-to-end,P1,5,"PN-020, PN-021, PN-022, PN-023, PN-025","Complex profile save, date errors, unauthorized edits, CV rendering tested",CONFIRMED,Ignore
+PN-026,M2,Story,Test profiles CV and ownership end-to-end,P1,5,"PN-020, PN-021, PN-022, PN-023, PN-025","Complex profile save, date errors, unauthorized edits, CV rendering tested",CONFIRMED,Done
 PN-027,M3,Story,Model posts likes comments and constraints,P1,3,"PN-008, PN-009",Post/comment/like migrations with ownership and cascading post deletion,CONFIRMED,Done
 PN-028,M3,Story,Implement posts CRUD and paginated feed APIs,P1,5,"PN-027, PN-014",Public text posts; author edit/delete; all-feed and connections-feed chronology,CONFIRMED,Done
 PN-029,M3,Story,Build public and connections feed screens,P1,5,"PN-004, PN-028","Paging, loading empty/error states, create/edit/delete owned posts",CONFIRMED,Done
@@ -35,7 +35,7 @@ PN-033,M3,Story,Build people directory and search UI,P1,5,"PN-004, PN-032","Sear
 PN-034,M3,Story,Model connection request lifecycle and integrity,P1,5,"PN-008, PN-009",Directed pending request and canonical accepted pair; no duplicates/self connections,CONFIRMED,Done
 PN-035,M3,Story,Implement connection-request and accepted-network APIs,P1,5,"PN-034, PN-014",Send cancel accept decline disconnect; only eligible actor; status conflicts handled,CONFIRMED,Done
 PN-036,M3,Story,Build network invitations and connection screens,P1,5,"PN-004, PN-035","Pending incoming/outgoing and accepted connections, relevant actions/feedback",CONFIRMED,Done
-PN-037,M3,Story,Test posts network search and permissions,P1,5,"PN-028, PN-030, PN-032, PN-033, PN-035, PN-036",Cross-user workflows; direct endpoint abuse; pagination and cascade checks,CONFIRMED,Ignore
+PN-037,M3,Story,Test posts network search and permissions,P1,5,"PN-028, PN-030, PN-032, PN-033, PN-035, PN-036",Cross-user workflows; direct endpoint abuse; pagination and cascade checks,CONFIRMED,Backlog
 PN-038,M4,Story,Model conversations messages and per-user state,P1,5,"PN-008, PN-034",Unique unordered pair; read pointer; hidden state; messages immutable,CONFIRMED,Done
 PN-039,M4,Story,Implement message send and history APIs,P1,8,"PN-038, PN-014, PN-035",Accepted connection required; persist before event; newest messages with older paging,CONFIRMED,Done
 PN-040,M4,Story,Build inbox and conversation UI,P1,8,"PN-004, PN-039","List sorted by latest, read/unread states, send and load older messages",CONFIRMED,Done
@@ -46,15 +46,15 @@ PN-044,M4,Story,Implement conversation hide/disconnect lifecycle,P1,5,"PN-038, P
 PN-045,M4,Story,Model and expose persistent notifications,P1,5,"PN-008, PN-035",Notifications stored and paginated; mark read; private recipient only,CONFIRMED,Done
 PN-046,M4,Story,Build notification center and unread indicators,P1,5,"PN-004, PN-046, PN-042",Notifications accessible and counts update via SSE; no push/email,CONFIRMED,Done
 PN-047,M4,Task,Add idempotent message retry and notification policies,P1,5,"PN-039, PN-046",Same client request ID does not duplicate send; accepted notification events documented,PROPOSED,Backlog
-PN-048,M4,Story,"Messaging integration, SSE and authorization tests",P1,8,"PN-039, PN-040, PN-041, PN-042, PN-043, PN-044, PN-045, PN-046","Two-user messaging and third-party denial, disconnect, reconnect, reload pass",PROPOSED,Ignore
+PN-048,M4,Story,"Messaging integration, SSE and authorization tests",P1,8,"PN-039, PN-040, PN-041, PN-042, PN-043, PN-044, PN-045, PN-046","Two-user messaging and third-party denial, disconnect, reconnect, reload pass",PROPOSED,Backlog
 PN-049,M5,Task,Configure PWA app shell and installability,P1,5,"PN-002, PN-004","Manifest, icons, SW; installable HTTPS; API and SSE never cached",CONFIRMED,Done
 PN-050,M5,Story,Implement PWA update and offline UX,P1,3,PN-049,"Update prompt; offline shell loads, authenticated actions report no network",CONFIRMED,Done
 PN-051,M5,Task,Finalize frontend state and error treatment,P1,5,"PN-029, PN-031, PN-033, PN-040, PN-047",All major views have consistent loading empty error retry states and navigation,CONFIRMED,Done
 PN-052,M5,Story,Accessibility audit and fixes,P1,5,"PN-020, PN-021, PN-029, PN-031, PN-033, PN-040, PN-047","WCAG2.2 AA checks, keyboard tests and contrast/a11y regression work",CONFIRMED,Done
 PN-053,M5,Story,Security hardening and abuse test suite,P1,8,"PN-016, PN-026, PN-037, PN-048","CSRF, session theft mitigation, authorization, rate limits, output escaping, cache privacy tests",CONFIRMED,Done
-PN-054,M5,Task,Add performance / capacity smoke scenarios,P1,3,"PN-037, PN-048","Bounded feeds and connections, H2 and SSE resource tests with baseline reported",CONFIRMED,Ignore
+PN-054,M5,Task,Add performance / capacity smoke scenarios,P1,3,"PN-037, PN-048","Bounded feeds and connections, H2 and SSE resource tests with baseline reported",CONFIRMED,Backlog
 PN-055,M5,Task,Confirm proposed Round 8 behavior defaults,P1,2,"PN-016, PN-026, PN-037, PN-048",Product owner chooses Q116-137 defaults; amended tickets and acceptance cases linked,PROPOSED,Backlog
-PN-056,M5,Story,Final integration E2E regression suite,P1,8,"PN-050, PN-051, PN-052, PN-053, PN-054, PN-055",Critical anonymous/public/user/network/message/CV/PWA journeys automated,CONFIRMED,Ignore
+PN-056,M5,Story,Final integration E2E regression suite,P1,8,"PN-050, PN-051, PN-052, PN-053, PN-054, PN-055",Critical anonymous/public/user/network/message/CV/PWA journeys automated,CONFIRMED,Backlog
 PN-057,M6,Task,Create Alpine NGINX HTTPS deployment config,P1,5,"PN-003, PN-049",TLS redirects; same-origin /api proxy; restricted backend; SSE buffering disabled,CONFIRMED,Done
 PN-058,M6,Story,Package backend and OpenRC non-root service,P1,5,"PN-003, PN-008","Java 25 runtime validated on Alpine, env config, writable data directory, start/restart works",CONFIRMED,Done
 PN-059,M6,Story,Implement manual deployment and rollback scripts,P1,5,"PN-057, PN-058","Versioned artifact install, health gating, service restart, frontend publish, rollback documented",CONFIRMED,Done

@@ -111,12 +111,13 @@
 - **Acceptance criteria:** Login and registration rate limited; secure headers; private information excluded from logs.
 - **Done when:** Automated checks appropriate to the change pass, errors and security cases are covered, and CI is green.
 
-### PN-016 — Build auth integration and browser E2E coverage
+### PN-016 — Complete auth API integration coverage
 
-- **Priority:** P0 · **Relative size:** 5 points · **Decision:** CONFIRMED
+- **Priority:** P0 · **Relative size:** 3 points · **Decision:** CONFIRMED
 - **Depends on:** PN-012, PN-013, PN-014, PN-015
-- **Acceptance criteria:** Register/login/logout, CSRF, expired session, password change, delete tested.
-- **Done when:** Automated checks appropriate to the change pass, errors and security cases are covered, and CI is green.
+- **Scope:** First-version backend integration coverage only. Browser-driven E2E setup and broad browser workflow automation are deferred; reconsider them with the final regression suite (PN-056) if still needed.
+- **Acceptance criteria:** API integration tests cover registration and authenticated session, login/logout, CSRF enforcement, unauthenticated/invalid-session access, password change (including incorrect current password), and account deletion. Account deletion removes the account/profile and invalidates its session.
+- **Done when:** The above cases pass against the application integration test context, relevant authorization/security failures are asserted, and CI is green.
 
 ## M2 — Profiles and CV
 

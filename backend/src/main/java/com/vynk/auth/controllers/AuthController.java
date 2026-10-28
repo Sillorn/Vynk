@@ -154,6 +154,8 @@ public class AuthController {
         String username = authentication.getName();
         UserAccount account = userAccountRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new ApiException(ApiErrorCode.NOT_FOUND, "User not found."));
+        profileRepository.findByUserAccountUsernameIgnoreCase(username)
+                .ifPresent(profileRepository::delete);
         userAccountRepository.delete(account);
         SecurityContextHolder.clearContext();
         HttpSession session = httpRequest.getSession(false);
@@ -170,11 +172,6 @@ public class AuthController {
             throw new ApiException(ApiErrorCode.UNAUTHENTICATED, "Authentication required.");
         }
         return ResponseEntity.ok(Map.of("username", authentication.getName()));
-    }
-
-    @PostMapping("/csrf")
-    public ResponseEntity<?> csrf(CsrfToken csrfToken) {
-        return ResponseEntity.ok(Map.of("headerName", csrfToken.getHeaderName(), "token", csrfToken.getToken()));
     }
 
     public record LoginRequest(
