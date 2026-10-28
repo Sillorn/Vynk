@@ -12,7 +12,16 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { catchError, distinctUntilChanged, map, of, Subject, switchMap } from 'rxjs';
+import {
+  catchError,
+  distinctUntilChanged,
+  map,
+  mergeWith,
+  of,
+  Subject,
+  switchMap,
+  timeout,
+} from 'rxjs';
 import { PublicProfile } from '../../../core/profiles/profile.models';
 import { ProfileService } from '../../../core/profiles/profile.service';
 import { InitialsAvatar } from '../../../shared/initials-avatar/initials-avatar';
@@ -44,7 +53,7 @@ export class PublicProfilePage {
   private readonly profiles = inject(ProfileService);
   private readonly title = inject(Title);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly loadRequest$ = new Subject<string>();
+  private readonly reloadRequest$ = new Subject<string>();
 
   protected readonly profile = signal<PublicProfile | null>(null);
   protected readonly loading = signal(true);
@@ -64,20 +73,22 @@ export class PublicProfilePage {
     this.route.paramMap
       .pipe(
         map((params) => params.get('username') ?? ''),
+        mergeWith(this.reloadRequest$),
         distinctUntilChanged(),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((username) => this.loadRequest$.next(username));
-
-    this.loadRequest$
-      .pipe(
         switchMap((username) => {
           this.loading.set(true);
           this.error.set(null);
           return this.profiles.getPublicProfile(username).pipe(
+            timeout({ first: 15_000 }),
             map((profile): LoadResult => ({ profile, error: null })),
-            catchError((error: HttpErrorResponse) =>
-              of<LoadResult>({ profile: null, error: describeError(error) }),
+            catchError((error: unknown) =>
+              of<LoadResult>({
+                profile: null,
+                error:
+                  error instanceof HttpErrorResponse
+                    ? describeError(error)
+                    : 'The profile request timed out. Check the server connection and try again.',
+              }),
             ),
           );
         }),
@@ -95,7 +106,7 @@ export class PublicProfilePage {
 
   protected reload(): void {
     const username = this.route.snapshot.paramMap.get('username') ?? '';
-    this.loadRequest$.next(username);
+    this.reloadRequest$.next(username);
   }
 
   protected fullName(profile: PublicProfile): string {
