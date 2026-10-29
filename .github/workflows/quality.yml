@@ -43,11 +43,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Tests are temporarily non-blocking while the identity/profile suites are
-      # brought up to date. The step still runs so failures stay visible.
       - name: Run unit tests
         run: npm run test:ci
-        continue-on-error: true
 
   backend:
     name: Backend build
@@ -68,5 +65,5 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
 
-      - name: Build
-        run: ./mvnw -B -ntp verify -DskipTests
+      - name: Build and test
+        run: ./mvnw -B -ntp verify

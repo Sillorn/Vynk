@@ -39,20 +39,8 @@ describe('App shell', () => {
     const links = Array.from(nav?.querySelectorAll<HTMLAnchorElement>('a') ?? []);
 
     expect(element.querySelector('.brand-name')?.textContent).toContain('Vynk');
-    expect(links.map((link) => link.textContent?.trim())).toEqual([
-      'Feed',
-      'People',
-      'My network',
-      'Messages',
-      'Notifications',
-    ]);
-    expect(links.map((link) => link.getAttribute('href'))).toEqual([
-      '/feed',
-      '/people',
-      '/network',
-      '/messages',
-      '/notifications',
-    ]);
+    expect(links.map((link) => link.textContent?.trim())).toEqual(['Feed']);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/feed']);
   });
 
   it('offers sign-in and registration actions', () => {

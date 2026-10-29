@@ -12,7 +12,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Confirms the API document can be switched off for deployed environments.
  */
-@SpringBootTest(properties = "springdoc.api-docs.enabled=false")
+@SpringBootTest(properties = {
+        "springdoc.api-docs.enabled=false",
+        "spring.datasource.url=jdbc:h2:mem:vynk-openapi-disabled;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+})
 @AutoConfigureMockMvc
 class OpenApiDisabledTest {
 

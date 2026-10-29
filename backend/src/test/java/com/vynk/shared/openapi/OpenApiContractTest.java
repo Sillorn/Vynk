@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>The generated artifact is consumed by API clients and uploaded by CI. Assertions here keep
  * the document valid, versioned and populated with the shared contract schemas.</p>
  */
-@SpringBootTest
+@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:vynk-openapi-contract;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE")
 @AutoConfigureMockMvc
 class OpenApiContractTest {
 

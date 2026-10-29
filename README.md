@@ -25,11 +25,10 @@ The backend uses the committed Maven wrapper, so a separate Maven install is not
 - Backend: `cd backend && ./mvnw verify`
 
 ## Continuous integration
-`.github/workflows/quality.yml` runs the frontend format/build checks and the backend
-`./mvnw verify -DskipTests` build on every pull request and on pushes to `main`. Unit test steps
-currently run as non-blocking (`continue-on-error`) while the identity/profile suites are brought
-up to date; build or format failures still fail the workflow. To block merges when the workflow
-fails, enable branch protection for `main` and require the **Quality** status checks.
+`.github/workflows/quality.yml` runs frontend format, lint, build, and unit tests, plus the backend
+`./mvnw -B -ntp verify` build and tests on every pull request and on pushes to `main`. Test failures
+fail the workflow. To block merges when the workflow fails, enable branch protection for `main` and
+require the **Quality** status checks.
 
 ## Notes
 - No Docker, no separate PostgreSQL. Frontend served by NGINX in deployment; backend is an OpenRC service on Alpine.
