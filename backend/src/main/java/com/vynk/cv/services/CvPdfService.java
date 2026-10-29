@@ -38,7 +38,8 @@ public class CvPdfService {
             writer.line(profile.headline(), 12);
             writer.line(profile.location(), FONT_SIZE);
             writer.line("Profile: " + profile.username(), FONT_SIZE);
-            writer.section("Summary");
+            writer.startMainColumn();
+            writer.section("About");
             writer.paragraph(profile.summary());
             if (!profile.experience().isEmpty()) {
                 writer.section("Experience");
@@ -56,21 +57,26 @@ public class CvPdfService {
                     writer.paragraph(item.description());
                 }
             }
-            if (!profile.certifications().isEmpty()) {
-                writer.section("Certifications");
-                for (var item : profile.certifications()) writer.line(join(item.name(), item.issuer(), date(item.issueDate())), FONT_SIZE);
-            }
             if (!profile.projects().isEmpty()) {
                 writer.section("Projects");
                 for (var item : profile.projects()) {
                     writer.entry(item.name(), join(date(item.startDate()), date(item.endDate())));
                     writer.paragraph(item.description());
-                    writer.link(item.url());
+                    if (item.url() != null && !item.url().isBlank()) writer.link("View project: " + item.url());
                 }
             }
+            if (!profile.certifications().isEmpty()) {
+                writer.section("Certifications");
+                for (var item : profile.certifications()) {
+                    writer.entry(item.name(), item.issuer());
+                    writer.line(certificationPeriod(item.issueDate(), item.expirationDate()), FONT_SIZE);
+                    if (item.credentialUrl() != null && !item.credentialUrl().isBlank()) writer.link("View credential: " + item.credentialUrl());
+                }
+            }
+            writer.startSidebar();
             if (!profile.skills().isEmpty()) {
                 writer.section("Skills");
-                writer.paragraph(String.join(", ", profile.skills().stream().map(PublicProfileResponse.SkillDto::name).toList()));
+                for (var skill : profile.skills()) writer.paragraph(skill.name());
             }
             if (!profile.languages().isEmpty()) {
                 writer.section("Languages");
@@ -89,6 +95,12 @@ public class CvPdfService {
     }
 
     private static String date(java.time.LocalDate date) { return date == null ? "" : date.toString(); }
+    private static String certificationPeriod(java.time.LocalDate issue, java.time.LocalDate expiration) {
+        List<String> dates = new ArrayList<>();
+        if (issue != null) dates.add("Issued " + issue);
+        if (expiration != null) dates.add("Expires " + expiration);
+        return String.join(" · ", dates);
+    }
     private static String join(String... values) {
         List<String> present = new ArrayList<>();
         for (String value : values) if (value != null && !value.isBlank()) present.add(value.trim());
@@ -101,6 +113,8 @@ public class CvPdfService {
         private final PDType0Font font;
         private PDPageContentStream stream;
         private float y;
+        private float x = MARGIN;
+        private float columnWidth = PDRectangle.LETTER.getWidth() - MARGIN * 2;
 
         private Writer(PDDocument document, PDType0Font font) throws IOException {
             this.document = document;
@@ -115,15 +129,34 @@ public class CvPdfService {
             y = page.getMediaBox().getHeight() - MARGIN;
         }
         private void ensure(float height) throws IOException { if (y - height < MARGIN) page(); }
+        private void startMainColumn() {
+            columnWidth = PDRectangle.LETTER.getWidth() * 0.70f - MARGIN * 1.5f;
+        }
+        private void startSidebar() throws IOException {
+            stream.close();
+            stream = new PDPageContentStream(document, document.getPage(0), PDPageContentStream.AppendMode.APPEND, true);
+            x = PDRectangle.LETTER.getWidth() * 0.70f;
+            columnWidth = PDRectangle.LETTER.getWidth() - MARGIN - x;
+            y = PDRectangle.LETTER.getHeight() - MARGIN - 72;
+        }
         private void heading(String text, float size) throws IOException { text(text, size, true); }
-        private void section(String text) throws IOException { ensure(30); y -= 10; text(text, 13, true); }
+        private void section(String text) throws IOException {
+            ensure(30);
+            y -= 10;
+            text(text, 13, true);
+            stream.setLineWidth(0.7f);
+            stream.moveTo(x, y);
+            stream.lineTo(x + columnWidth, y);
+            stream.stroke();
+            y -= 16;
+        }
         private void entry(String title, String subtitle) throws IOException {
             text(title, 11, true);
             if (subtitle != null && !subtitle.isBlank()) text(subtitle, FONT_SIZE, false);
         }
         private void paragraph(String text) throws IOException {
             if (text == null || text.isBlank()) return;
-            float maxWidth = PDRectangle.LETTER.getWidth() - MARGIN * 2;
+            float maxWidth = columnWidth;
             StringBuilder line = new StringBuilder();
             for (String word : text.trim().split("\\s+")) {
                 String candidate = line.isEmpty() ? word : line + " " + word;
@@ -143,8 +176,12 @@ public class CvPdfService {
             ensure(size + 4);
             stream.beginText();
             stream.setFont(font, size);
-            stream.newLineAtOffset(MARGIN, y);
+            stream.newLineAtOffset(x, y);
             stream.showText(value);
+            if (bold) {
+                stream.newLineAtOffset(0.35f, 0);
+                stream.showText(value);
+            }
             stream.endText();
             y -= size + (bold ? 7 : 4);
         }
