@@ -3,19 +3,41 @@ import { MatButtonModule } from '@angular/material/button';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ProfileService } from '../../../core/profiles/profile.service';
 import { PublicProfile } from '../../../core/profiles/profile.models';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-profile-editor',
   standalone: true,
-  imports: [MatButtonModule, ReactiveFormsModule],
+  imports: [MatButtonModule, ReactiveFormsModule, RouterLink],
   template: `
     <main class="page editor">
-      <h1>Edit your profile</h1>
+      <div class="editor-heading">
+        <h1>Edit your profile</h1>
+        @if (original) {
+          <a matButton="outlined" [routerLink]="['/profile', original.username]" target="_blank">
+            View profile
+          </a>
+        }
+      </div>
       @if (loading()) {
         <p role="status">Loading profile…</p>
       } @else {
         @if (message()) {
           <p role="status">{{ message() }}</p>
+        }
+        @if (toast()) {
+          <div
+            class="save-toast"
+            [class.success]="toast()?.kind === 'success'"
+            [class.error]="toast()?.kind === 'error'"
+            role="status"
+            aria-live="polite"
+          >
+            <span>{{ toast()?.text }}</span>
+            <button type="button" aria-label="Close notification" (click)="dismissToast()">
+              ×
+            </button>
+          </div>
         }
         <form [formGroup]="form" (ngSubmit)="save()">
           <fieldset [disabled]="saving()">
@@ -31,11 +53,28 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
               <legend>{{ section.label }}</legend>
               <div [formArrayName]="section.key">
                 @for (row of array(section.key).controls; track row; let i = $index) {
+                  @if (i > 0) {
+                    <hr class="item-separator" />
+                  }
                   <div class="row" [formGroupName]="i">
                     @for (field of section.fields; track field.key) {
                       <label>
                         {{ field.label }}
-                        <input [type]="fieldType(field)" [formControlName]="field.key" />
+                        @if (fieldType(field) === 'checkbox') {
+                          <input
+                            type="checkbox"
+                            [checked]="row.get(field.key)?.value === true"
+                            (change)="setCurrent(row, $event)"
+                          />
+                        } @else if (fieldOptions(field)) {
+                          <select [formControlName]="field.key">
+                            @for (option of fieldOptions(field); track option) {
+                              <option [value]="option">{{ option }}</option>
+                            }
+                          </select>
+                        } @else {
+                          <input [type]="fieldType(field)" [formControlName]="field.key" />
+                        }
                       </label>
                     }
                     <button
@@ -105,6 +144,15 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
         margin: 2rem auto;
         padding: 1.5rem;
       }
+      .editor-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+      .editor-heading h1 {
+        margin: 0;
+      }
       form,
       fieldset {
         display: grid;
@@ -132,6 +180,44 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
         --mat-button-filled-container-color: var(--mat-sys-error);
         --mat-button-filled-label-text-color: var(--mat-sys-on-error);
       }
+      .save-toast {
+        position: fixed;
+        z-index: 1000;
+        top: 1rem;
+        right: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        width: min(24rem, calc(100vw - 2rem));
+        padding: 0.75rem 1rem;
+        color: white;
+        border-radius: 0.4rem;
+        box-shadow: 0 4px 16px rgb(0 0 0 / 25%);
+      }
+      .save-toast.success {
+        background: #2e7d32;
+      }
+      .save-toast.error {
+        background: #c62828;
+      }
+      .save-toast button {
+        color: inherit;
+        background: transparent;
+        border: 0;
+        font-size: 1.4rem;
+        cursor: pointer;
+      }
+      [formArrayName] {
+        display: grid;
+        gap: 1rem;
+      }
+      .item-separator {
+        width: 100%;
+        margin: 0.75rem 0;
+        border: 0;
+        border-top: 1px solid #bbb;
+      }
       .row {
         display: flex;
         align-items: end;
@@ -143,7 +229,8 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
         gap: 0.3rem;
       }
       input,
-      textarea {
+      textarea,
+      select {
         font: inherit;
         padding: 0.6rem;
         border: 1px solid #777;
@@ -159,6 +246,8 @@ export class ProfileEditor {
   loading = signal(true);
   saving = signal(false);
   message = signal('');
+  toast = signal<{ kind: 'success' | 'error'; text: string } | null>(null);
+  private toastTimeout?: ReturnType<typeof setTimeout>;
   sections = [
     {
       key: 'links',
@@ -227,7 +316,11 @@ export class ProfileEditor {
       item: 'language',
       fields: [
         { key: 'name', label: 'Name' },
-        { key: 'proficiency', label: 'Proficiency' },
+        {
+          key: 'proficiency',
+          label: 'Proficiency',
+          options: ['Native or bilingual', 'Fluent', 'Advanced', 'Intermediate', 'Basic'],
+        },
       ],
     },
   ] as const;
@@ -257,12 +350,7 @@ export class ProfileEditor {
           location: p.location ?? '',
         });
         for (const s of this.sections)
-          for (const item of p[s.key] ?? [])
-            this.array(s.key).push(
-              this.fb.group(
-                Object.fromEntries(s.fields.map((f) => [f.key, [(item as any)[f.key] ?? '']])),
-              ),
-            );
+          for (const item of p[s.key] ?? []) this.array(s.key).push(this.createRow(s, item));
         this.loading.set(false);
       },
       error: () => {
@@ -274,14 +362,45 @@ export class ProfileEditor {
   fieldType(field: { type?: string; key: string; label: string }): string {
     return field.type ?? 'text';
   }
+  fieldOptions(field: object): readonly string[] | undefined {
+    return (field as { options?: readonly string[] }).options;
+  }
   array(key: string): FormArray {
     return this.form.controls[key as keyof typeof this.form.controls] as FormArray;
   }
   add(key: string) {
     const section = this.sections.find((x) => x.key === key)!;
-    this.array(key).push(
-      this.fb.group(Object.fromEntries(section.fields.map((f) => [f.key, ['']]))),
+    this.array(key).push(this.createRow(section));
+  }
+  setCurrent(row: any, event: Event) {
+    row.get('current').setValue((event.target as HTMLInputElement).checked);
+  }
+  private createRow(section: (typeof this.sections)[number], item?: object) {
+    const row = this.fb.group(
+      Object.fromEntries(
+        section.fields.map((f) => [
+          f.key,
+          [
+            (item as any)?.[f.key] ??
+              ('options' in f ? f.options[0] : 'type' in f && f.type === 'checkbox' ? false : ''),
+          ],
+        ]),
+      ),
     );
+    if (section.key === 'experience') {
+      const current = row.get('current')!;
+      current.valueChanges.subscribe((isCurrent: boolean) => {
+        const endDate = row.get('endDate')!;
+        if (isCurrent) {
+          endDate.setValue('');
+          endDate.disable();
+        } else {
+          endDate.enable();
+        }
+      });
+      if (current.value) row.get('endDate')!.disable();
+    }
+    return row;
   }
   remove(key: string, i: number) {
     this.array(key).removeAt(i);
@@ -324,18 +443,36 @@ export class ProfileEditor {
     for (const s of this.sections) this.array(s.key).clear();
     for (const s of this.sections)
       for (const item of this.original[s.key] ?? [])
-        this.array(s.key).push(
-          this.fb.group(
-            Object.fromEntries(s.fields.map((f) => [f.key, [(item as any)[f.key] ?? '']])),
-          ),
-        );
+        this.array(s.key).push(this.createRow(s, item));
     this.form.markAsPristine();
+  }
+  private showToast(kind: 'success' | 'error', text: string) {
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toast.set({ kind, text });
+    this.toastTimeout = setTimeout(() => this.toast.set(null), 5000);
+  }
+  dismissToast() {
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toast.set(null);
   }
   save() {
     if (this.form.invalid || this.saving()) return;
     const v = this.form.getRawValue();
+    for (const section of this.sections) {
+      v[section.key] = (v[section.key] as Record<string, unknown>[]).map((item) => {
+        const normalized = { ...item };
+        for (const field of section.fields) {
+          if ('type' in field && field.type === 'date' && normalized[field.key] === '')
+            normalized[field.key] = null;
+          if ('type' in field && field.type === 'checkbox')
+            normalized[field.key] = Boolean(normalized[field.key]);
+        }
+        return normalized;
+      });
+    }
     if (!this.hasSafeLinks(v)) {
       this.message.set('Links must use a valid http:// or https:// address.');
+      this.showToast('error', 'Links must use a valid http:// or https:// address.');
       return;
     }
     this.saving.set(true);
@@ -345,11 +482,13 @@ export class ProfileEditor {
         this.original = p;
         this.form.markAsPristine();
         this.saving.set(false);
-        this.message.set('Profile saved.');
+        this.message.set('');
+        this.showToast('success', 'Profile saved successfully.');
       },
       error: () => {
         this.saving.set(false);
-        this.message.set('Save failed. Check your entries and try again.');
+        this.message.set('');
+        this.showToast('error', 'Save failed. Check your entries and try again.');
       },
     });
   }

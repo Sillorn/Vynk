@@ -32,18 +32,16 @@ export class AuthService {
   }
 
   login(username: string, password: string) {
-    return this.http
-      .get<void>(`${this.apiBase}/csrf`, { withCredentials: true })
-      .pipe(
-        switchMap(() =>
-          this.http.post<SessionUser>(
-            `${this.apiBase}/login`,
-            { username: username.toLowerCase(), password },
-            { withCredentials: true },
-          ),
+    return this.http.get<void>(`${this.apiBase}/csrf`, { withCredentials: true }).pipe(
+      switchMap(() =>
+        this.http.post<SessionUser>(
+          `${this.apiBase}/login`,
+          { username: username.toLowerCase(), password },
+          { withCredentials: true },
         ),
-        tap((user) => this.user.set(user)),
-      );
+      ),
+      tap((user) => this.user.set(user)),
+    );
   }
 
   register(payload: {
@@ -54,21 +52,19 @@ export class AuthService {
     headline: string;
     summary: string;
   }) {
-    return this.http
-      .get<void>(`${this.apiBase}/csrf`, { withCredentials: true })
-      .pipe(
-        switchMap(() =>
-          this.http.post<SessionUser>(
-            `${this.apiBase}/register`,
-            {
-              ...payload,
-              username: payload.username.toLowerCase(),
-            },
-            { withCredentials: true },
-          ),
+    return this.http.get<void>(`${this.apiBase}/csrf`, { withCredentials: true }).pipe(
+      switchMap(() =>
+        this.http.post<SessionUser>(
+          `${this.apiBase}/register`,
+          {
+            ...payload,
+            username: payload.username.toLowerCase(),
+          },
+          { withCredentials: true },
         ),
-        tap((user) => this.user.set(user)),
-      );
+      ),
+      tap((user) => this.user.set(user)),
+    );
   }
 
   logout() {
