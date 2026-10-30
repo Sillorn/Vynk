@@ -5,6 +5,7 @@ import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PeopleCard, ProfileService } from '../../../core/profiles/profile.service';
+import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-people-directory',
@@ -197,6 +198,7 @@ import { PeopleCard, ProfileService } from '../../../core/profiles/profile.servi
 })
 export class PeopleDirectory {
   private readonly service = inject(ProfileService);
+  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly people = signal<readonly PeopleCard[]>([]);
@@ -233,10 +235,13 @@ export class PeopleDirectory {
     this.error.set(null);
     this.service.searchPeople(this.query, page).subscribe({
       next: (result) => {
-        this.people.set(result.items);
+        const user = this.auth.user()?.username.toLowerCase();
+        const isSelf = (person: PeopleCard) => person.username.toLowerCase() === user;
+        const items = user ? result.items.filter((person) => !isSelf(person)) : result.items;
+        this.people.set(items);
         this.page.set(result.page);
         this.totalPages.set(result.totalPages);
-        this.totalElements.set(result.totalElements);
+        this.totalElements.set(Math.max(0, result.totalElements - (user && result.items.some(isSelf) ? 1 : 0)));
         this.hasNext.set(result.hasNext);
         this.loading.set(false);
       },

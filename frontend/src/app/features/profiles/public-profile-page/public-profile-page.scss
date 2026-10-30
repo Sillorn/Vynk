@@ -11,8 +11,35 @@
   min-width: 0;
 }
 
+.profile-hero__name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .profile-hero__body h1 {
+  margin: 0;
   overflow-wrap: anywhere;
+}
+
+.add-contact-button {
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #16834a;
+  color: #fff;
+  font: var(--mat-sys-label-large);
+  cursor: pointer;
+}
+
+.add-contact-button:hover:not(:disabled) {
+  background: #10683a;
+}
+
+.add-contact-button:disabled {
+  opacity: 0.72;
+  cursor: default;
 }
 
 .profile-headline {

@@ -8,6 +8,9 @@ import com.vynk.connections.repositories.AcceptedConnectionRepository;
 import com.vynk.connections.repositories.ConnectionRequestRepository;
 import com.vynk.identity.entities.UserAccount;
 import com.vynk.identity.repositories.UserAccountRepository;
+import com.vynk.notifications.entities.Notification;
+import com.vynk.notifications.repositories.NotificationRepository;
+import com.vynk.messaging.UserEventStream;
 import com.vynk.shared.error.ApiException;
 import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,12 +22,29 @@ public class ConnectionService {
     private final ConnectionRequestRepository requests;
     private final AcceptedConnectionRepository accepted;
     private final UserAccountRepository accounts;
+    private final NotificationRepository notifications;
+    private final UserEventStream eventStream;
 
     public ConnectionService(ConnectionRequestRepository requests, AcceptedConnectionRepository accepted,
-                             UserAccountRepository accounts) {
+                             UserAccountRepository accounts, NotificationRepository notifications,
+                             UserEventStream eventStream) {
         this.requests = requests;
         this.accepted = accepted;
         this.accounts = accounts;
+        this.notifications = notifications;
+        this.eventStream = eventStream;
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> contacts(String actor) {
+        return accepted.findContacts(account(actor).getId());
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isConnected(String actor, String target) {
+        UserAccount a = account(actor), b = account(target);
+        return !a.getId().equals(b.getId()) && accepted.existsById(new AcceptedConnection.Key(
+                Math.min(a.getId(), b.getId()), Math.max(a.getId(), b.getId())));
     }
 
     @Transactional(readOnly = true)
@@ -79,6 +99,9 @@ public class ConnectionService {
         try {
             accepted.save(new AcceptedConnection(low, high));
             request.setStatus(ConnectionRequestStatus.ACCEPTED);
+            notifications.save(new Notification(request.getSender(), "CONNECTION_ACCEPTED",
+                    request.getRecipient().getUsername()));
+            eventStream.publish(request.getSender().getUsername(), "notification");
         } catch (DataIntegrityViolationException ex) {
             throw ApiException.conflict("These users are already connected.");
         }

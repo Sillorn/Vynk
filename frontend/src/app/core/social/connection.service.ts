@@ -11,6 +11,14 @@ export interface ConnectionRequest {
 export class ConnectionService {
   private readonly http = inject(HttpClient);
   private readonly endpoint = '/api/v1/connections';
+  contacts() {
+    return this.http.get<string[]>(this.endpoint, { withCredentials: true });
+  }
+  isConnected(username: string) {
+    return this.http.get<boolean>(`${this.endpoint}/${encodeURIComponent(username)}/status`, {
+      withCredentials: true,
+    });
+  }
   incoming() {
     return this.http.get<ConnectionRequest[]>(`${this.endpoint}/requests/incoming`, {
       withCredentials: true,

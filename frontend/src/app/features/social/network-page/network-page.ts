@@ -3,13 +3,14 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ConnectionRequest, ConnectionService } from '../../../core/social/connection.service';
 
 @Component({
   selector: 'app-network-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, MatButtonModule],
+  imports: [DatePipe, FormsModule, MatButtonModule, RouterLink],
   template: `
     <section class="page network-page">
       <header class="page-intro">
@@ -22,6 +23,29 @@ import { ConnectionRequest, ConnectionService } from '../../../core/social/conne
       @if (!auth.user()) {
         <p class="surface-card" role="status">Sign in to manage your network.</p>
       } @else {
+        <div class="tabs" role="tablist" aria-label="My network">
+          <button mat-button role="tab" [attr.aria-selected]="tab() === 'contacts'" (click)="tab.set('contacts')">Contacts</button>
+          <button mat-button role="tab" [attr.aria-selected]="tab() === 'invitations'" (click)="tab.set('invitations')">Invitations</button>
+        </div>
+        @if (tab() === 'contacts') {
+          <section class="surface-card list">
+            <h2>Contacts</h2>
+            @if (contacts().length) {
+              @for (username of contacts(); track username) {
+                <a class="contact-card" [routerLink]="['/profile', username]">
+                  <span class="contact-avatar" aria-hidden="true">{{ initials(username) }}</span>
+                  <span class="contact-details">
+                    <strong>{{ username }}</strong>
+                    <span>&#64;{{ username }}</span>
+                  </span>
+                  <span class="contact-card__action" aria-hidden="true">View profile <span>→</span></span>
+                </a>
+              }
+            } @else {
+              <p class="muted">You don't have any contact yet, <a routerLink="/people">connect with people now!</a></p>
+            }
+          </section>
+        } @else {
         <form class="surface-card invite" (ngSubmit)="send()">
           <label for="invite-user">Invite by username</label>
           <div>
@@ -78,6 +102,7 @@ import { ConnectionRequest, ConnectionService } from '../../../core/social/conne
             <p class="muted">No outgoing invitations.</p>
           }
         </section>
+        }
       }
     </section>
   `,
@@ -110,6 +135,59 @@ import { ConnectionRequest, ConnectionService } from '../../../core/social/conne
       }
       .list h2 {
         margin-top: 0;
+      }
+      .contact-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border: 1px solid #d8dee6;
+        border-radius: 0.75rem;
+        color: inherit;
+        text-decoration: none;
+        transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+      }
+      .contact-card + .contact-card {
+        margin-top: 0.75rem;
+      }
+      .contact-card:hover {
+        border-color: #8ea8c3;
+        background-color: #f7f9fc;
+        transform: translateY(-1px);
+      }
+      .contact-avatar {
+        display: grid;
+        place-items: center;
+        flex: 0 0 3rem;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        background: #e5eaf2;
+        color: #263c58;
+        font-weight: 700;
+      }
+      .contact-details {
+        display: grid;
+        gap: 0.2rem;
+        min-width: 0;
+      }
+      .contact-details strong {
+        overflow-wrap: anywhere;
+      }
+      .contact-details span,
+      .contact-card__action {
+        color: #5e6875;
+        font-size: 0.9rem;
+      }
+      .contact-card__action {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-left: auto;
+        white-space: nowrap;
+      }
+      .contact-card__action span {
+        font-size: 1.15rem;
       }
       .list article {
         display: flex;
@@ -146,6 +224,8 @@ export class NetworkPage {
   protected readonly auth = inject(AuthService);
   private readonly service = inject(ConnectionService);
   protected readonly incoming = signal<readonly ConnectionRequest[]>([]);
+  protected readonly contacts = signal<readonly string[]>([]);
+  protected readonly tab = signal<'contacts' | 'invitations'>('contacts');
   protected readonly outgoing = signal<readonly ConnectionRequest[]>([]);
   protected readonly error = signal<string | null>(null);
   protected readonly message = signal<string | null>(null);
@@ -159,9 +239,13 @@ export class NetworkPage {
     this.error.set(null);
     let completed = 0;
     const done = () => {
-      if (++completed === 2) this.busy.set(false);
+      if (++completed === 3) this.busy.set(false);
     };
     this.busy.set(true);
+    this.service.contacts().subscribe({
+      next: (value) => { this.contacts.set(value); done(); },
+      error: (err) => { this.fail(err); done(); },
+    });
     this.service.incoming().subscribe({
       next: (value) => {
         this.incoming.set(value);
@@ -182,6 +266,9 @@ export class NetworkPage {
         done();
       },
     });
+  }
+  protected initials(username: string): string {
+    return username.trim().slice(0, 2).toUpperCase();
   }
   protected send(): void {
     this.action(

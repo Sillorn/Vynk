@@ -98,6 +98,7 @@
 }
 
 .nav-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -107,6 +108,19 @@
   font: var(--mat-sys-label-large);
   text-decoration: none;
   white-space: nowrap;
+}
+
+.invitation-indicator {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background-color: #d32f2f;
+  box-shadow: 0 0 0 2px var(--mat-sys-surface);
 }
 
 .nav-link svg {
@@ -187,6 +201,10 @@
 
 .mobile-nav mat-nav-list svg {
   fill: currentColor;
+}
+
+.mobile-nav a[mat-list-item] {
+  position: relative;
 }
 
 .mobile-nav .nav-item--active {

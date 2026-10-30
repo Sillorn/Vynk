@@ -18,6 +18,16 @@ public class ConnectionController {
 
     public ConnectionController(ConnectionService service) { this.service = service; }
 
+    @GetMapping
+    public java.util.List<String> contacts(Authentication auth) {
+        return service.contacts(requireUsername(auth));
+    }
+
+    @GetMapping("/{username}/status")
+    public boolean isConnected(@PathVariable String username, Authentication auth) {
+        return service.isConnected(requireUsername(auth), username);
+    }
+
     @GetMapping("/requests/incoming")
     public java.util.List<ConnectionApi.Request> incoming(Authentication auth) {
         return service.incoming(requireUsername(auth));

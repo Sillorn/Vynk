@@ -25,7 +25,14 @@
 
     <div class="profile-hero__body">
       <p class="eyebrow">&#64;{{ profile.username }}</p>
-      <h1>{{ fullName(profile) }}</h1>
+      <div class="profile-hero__name-row">
+        <h1>{{ fullName(profile) }}</h1>
+        @if (auth.user() && auth.user()?.username?.toLowerCase() !== profile.username.toLowerCase() && !connected()) {
+          <button class="add-contact-button" type="button" [disabled]="connectionBusy() || invitationSent()" (click)="connect(profile.username)">
+            {{ invitationSent() ? 'Invitation sent' : 'Add contact' }}
+          </button>
+        }
+      </div>
       <a matButton="filled" [href]="cvUrl(profile)" [attr.download]="profile.username + '-cv.pdf'"
         >Download CV (PDF)</a
       >

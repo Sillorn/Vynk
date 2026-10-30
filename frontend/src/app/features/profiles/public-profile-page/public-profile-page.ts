@@ -25,6 +25,8 @@ import {
 import { PublicProfile } from '../../../core/profiles/profile.models';
 import { ProfileService } from '../../../core/profiles/profile.service';
 import { InitialsAvatar } from '../../../shared/initials-avatar/initials-avatar';
+import { AuthService } from '../../../core/auth/auth.service';
+import { ConnectionService } from '../../../core/social/connection.service';
 
 const MONTH_YEAR = new Intl.DateTimeFormat('en', {
   month: 'short',
@@ -51,6 +53,8 @@ interface LoadResult {
 export class PublicProfilePage {
   private readonly route = inject(ActivatedRoute);
   private readonly profiles = inject(ProfileService);
+  private readonly connections = inject(ConnectionService);
+  protected readonly auth = inject(AuthService);
   private readonly title = inject(Title);
   private readonly destroyRef = inject(DestroyRef);
   private readonly reloadRequest$ = new Subject<string>();
@@ -58,6 +62,9 @@ export class PublicProfilePage {
   protected readonly profile = signal<PublicProfile | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
+  protected readonly connected = signal(false);
+  protected readonly connectionBusy = signal(false);
+  protected readonly invitationSent = signal(false);
 
   protected readonly hasSidebar = computed(() => {
     const profile = this.profile();
@@ -96,12 +103,37 @@ export class PublicProfilePage {
       )
       .subscribe((result) => {
         this.profile.set(result.profile);
+        this.connected.set(false);
+        this.invitationSent.set(false);
+        if (result.profile && this.auth.user() && this.auth.user()?.username.toLowerCase() !== result.profile.username.toLowerCase()) {
+          this.connections.isConnected(result.profile.username).subscribe({
+            next: (connected) => {
+              this.connected.set(connected);
+              if (!connected) {
+                this.connections.outgoing().subscribe({
+                  next: (requests) => this.invitationSent.set(
+                    requests.some((request) => request.username.toLowerCase() === result.profile?.username.toLowerCase()),
+                  ),
+                });
+              }
+            },
+          });
+        }
         this.error.set(result.error);
         this.loading.set(false);
         this.title.setTitle(
           result.profile ? `${fullName(result.profile)} · Vynk` : 'Profile unavailable · Vynk',
         );
       });
+  }
+
+  protected connect(username: string): void {
+    if (this.connectionBusy() || this.connected()) return;
+    this.connectionBusy.set(true);
+    this.connections.send(username).subscribe({
+      next: () => { this.invitationSent.set(true); this.connectionBusy.set(false); },
+      error: () => { this.connectionBusy.set(false); },
+    });
   }
 
   protected reload(): void {

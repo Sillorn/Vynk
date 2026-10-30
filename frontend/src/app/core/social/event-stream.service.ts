@@ -16,6 +16,7 @@ export class EventStreamService {
         retryDelay = 1000;
       };
       source.addEventListener('message', () => onEvent('message'));
+      source.addEventListener('notification', () => onEvent('notification'));
       source.onerror = () => {
         source?.close();
         source = null;

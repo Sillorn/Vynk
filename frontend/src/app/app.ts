@@ -8,8 +8,9 @@ import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { filter, map } from 'rxjs';
+import { filter, interval, map } from 'rxjs';
 import { AuthService } from './core/auth/auth.service';
+import { ConnectionService } from './core/social/connection.service';
 
 interface NavItem {
   readonly label: string;
@@ -40,7 +41,9 @@ export class App {
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly connections = inject(ConnectionService);
   protected readonly auth = inject(AuthService);
+  protected readonly hasIncomingInvitations = signal(false);
 
   protected readonly isHandset = toSignal(
     this.breakpointObserver.observe(MOBILE_BREAKPOINT).pipe(map((state) => state.matches)),
@@ -89,6 +92,10 @@ export class App {
       if (this.isOffline()) this.showOfflineMessage();
     }
 
+    interval(60_000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.refreshIncomingInvitations());
+
     this.router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -96,6 +103,7 @@ export class App {
       )
       .subscribe((event) => {
         this.menuOpen.set(false);
+        this.refreshIncomingInvitations();
         const url = event.urlAfterRedirects;
         const publicPaths = ['/feed', '/login', '/register'];
         if (
@@ -106,6 +114,17 @@ export class App {
           void this.router.navigateByUrl('/feed');
         }
       });
+  }
+
+  private refreshIncomingInvitations(): void {
+    if (!this.auth.user() || this.isOffline()) {
+      this.hasIncomingInvitations.set(false);
+      return;
+    }
+    this.connections.incoming().subscribe({
+      next: (requests) => this.hasIncomingInvitations.set(requests.length > 0),
+      error: () => this.hasIncomingInvitations.set(false),
+    });
   }
 
   private readonly handleOffline = (): void => {
