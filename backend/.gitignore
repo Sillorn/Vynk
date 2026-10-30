@@ -1,3 +1,4 @@
 target/
 data/vynk.mv.db
+data/vynk.trace.db
 !.mvn/wrapper/maven-wrapper.jar
