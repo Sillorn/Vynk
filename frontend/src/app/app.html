@@ -45,10 +45,8 @@
           <path [attr.d]="item.icon" />
         </svg>
         <span>{{ item.label }}</span>
-        @if (
-          (item.path === '/network' && hasIncomingInvitations()) ||
-          (item.path === '/messages' && hasUnreadMessages())
-        ) {
+        @if ( (item.path === '/network' && hasIncomingInvitations()) || (item.path === '/messages'
+        && hasUnreadMessages()) ) {
         <span
           class="invitation-indicator"
           [attr.aria-label]="item.path === '/messages' ? 'Unread messages' : 'Pending invitations'"
@@ -99,10 +97,8 @@
             <path [attr.d]="item.icon" />
           </svg>
           <span matListItemTitle>{{ item.label }}</span>
-          @if (
-            (item.path === '/network' && hasIncomingInvitations()) ||
-            (item.path === '/messages' && hasUnreadMessages())
-          ) {
+          @if ( (item.path === '/network' && hasIncomingInvitations()) || (item.path === '/messages'
+          && hasUnreadMessages()) ) {
           <span
             class="invitation-indicator"
             [attr.aria-label]="item.path === '/messages' ? 'Unread messages' : 'Pending invitations'"

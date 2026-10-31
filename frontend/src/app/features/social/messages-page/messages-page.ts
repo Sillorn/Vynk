@@ -37,14 +37,11 @@ import {
             <h2>Inbox</h2>
             <div class="contact-picker">
               <label for="new-conversation">Start a conversation</label>
-              <select
-                id="new-conversation"
-                (change)="startConversation($any($event.target).value)"
-              >
-              <option value="">Choose a contact…</option>
-              @for (contact of availableContacts(); track contact) {
-                <option [value]="contact">{{ displayName(contact) }}</option>
-              }
+              <select id="new-conversation" (change)="startConversation($any($event.target).value)">
+                <option value="">Choose a contact…</option>
+                @for (contact of availableContacts(); track contact) {
+                  <option [value]="contact">{{ displayName(contact) }}</option>
+                }
               </select>
             </div>
             @if (loadingInbox()) {
@@ -63,7 +60,8 @@ import {
                   (click)="open(item)"
                 >
                   <span class="inbox-item__name"
-                    >{{ displayName(item.participantUsername) }} <span class="username">&#64;{{ item.participantUsername }}</span>
+                    >{{ displayName(item.participantUsername) }}
+                    <span class="username">&#64;{{ item.participantUsername }}</span>
                     @if (item.unreadCount) {
                       <span
                         class="badge"
@@ -87,7 +85,12 @@ import {
               <p class="muted">Choose a conversation to view messages.</p>
             } @else {
               <header class="conversation__header">
-                <h2>{{ displayName(selected()?.participantUsername ?? '') }} <span class="username conversation-username">&#64;{{ selected()?.participantUsername }}</span></h2>
+                <h2>
+                  {{ displayName(selected()?.participantUsername ?? '') }}
+                  <span class="username conversation-username"
+                    >&#64;{{ selected()?.participantUsername }}</span
+                  >
+                </h2>
               </header>
               @if (loadingMessages()) {
                 <p role="status">Loading messages…</p>
@@ -392,10 +395,12 @@ export class MessagesPage {
     effect((onCleanup) => {
       if (this.auth.user()) {
         this.reload();
-        this.connectionService.contacts().subscribe({ next: (contacts) => {
-          this.contacts.set(contacts);
-          contacts.forEach((username) => this.loadName(username));
-        } });
+        this.connectionService.contacts().subscribe({
+          next: (contacts) => {
+            this.contacts.set(contacts);
+            contacts.forEach((username) => this.loadName(username));
+          },
+        });
         const disconnect = this.eventStream.connect(() => {
           // The SSE payload is only a hint; reconcile current state from REST.
           this.reload();
@@ -412,10 +417,11 @@ export class MessagesPage {
   private loadName(username: string): void {
     if (!username || this.names()[username]) return;
     this.profileService.getPublicProfile(username).subscribe({
-      next: (profile) => this.names.update((names) => ({
-        ...names,
-        [username]: `${profile.firstName} ${profile.lastName}`.trim() || username,
-      })),
+      next: (profile) =>
+        this.names.update((names) => ({
+          ...names,
+          [username]: `${profile.firstName} ${profile.lastName}`.trim() || username,
+        })),
     });
   }
 
@@ -442,7 +448,13 @@ export class MessagesPage {
       this.open(existing);
       return;
     }
-    this.selected.set({ conversationId: 0, participantId: 0, participantUsername: username, latestMessage: null, unreadCount: 0 });
+    this.selected.set({
+      conversationId: 0,
+      participantId: 0,
+      participantUsername: username,
+      latestMessage: null,
+      unreadCount: 0,
+    });
     this.messages.set([]);
     this.page = 0;
     this.hasOlder.set(false);
@@ -492,8 +504,10 @@ export class MessagesPage {
         const item: InboxItem = {
           conversationId: message.conversationId,
           participantId: 0,
-          participantUsername: message.senderUsername === this.auth.user()?.username
-            ? this.selected()?.participantUsername ?? '' : message.senderUsername,
+          participantUsername:
+            message.senderUsername === this.auth.user()?.username
+              ? (this.selected()?.participantUsername ?? '')
+              : message.senderUsername,
           latestMessage: message,
           unreadCount: 0,
         };
@@ -522,7 +536,8 @@ export class MessagesPage {
     this.service.history(item.conversationId, this.page).subscribe({
       next: (response) => {
         response.items.forEach((message) => {
-          if (message.senderUsername !== this.auth.user()?.username) this.loadName(message.senderUsername);
+          if (message.senderUsername !== this.auth.user()?.username)
+            this.loadName(message.senderUsername);
         });
         this.messages.update((current) => {
           const combined = older
