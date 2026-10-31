@@ -57,7 +57,7 @@ public class PostService {
     public PostApi.PostResponse create(String username, PostApi.WriteRequest request) {
         UserAccount author = accounts.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> ApiException.notFound("Account not found."));
-        Post post = posts.save(new Post(author, request.content().trim()));
+        Post post = posts.save(new Post(author, request.content().trim(), audience(request.audience())));
         return PostApi.PostResponse.from(post);
     }
 
@@ -65,6 +65,8 @@ public class PostService {
     public PostApi.PostResponse update(String username, long id, PostApi.WriteRequest request) {
         Post post = requireOwned(username, id);
         post.setContent(request.content().trim());
+        // An omitted audience on legacy clients preserves the existing visibility.
+        if (request.audience() != null) post.setAudience(audience(request.audience()));
         return PostApi.PostResponse.from(post);
     }
 
@@ -134,6 +136,8 @@ public class PostService {
                 .orElseThrow(() -> ApiException.notFound("Comment not found."));
         comments.delete(comment);
     }
+
+    private static String audience(String value) { return value == null ? "PUBLIC" : value; }
 
     private Post requireOwned(String username, long id) {
         return posts.findOwned(id, username).orElseThrow(() -> ApiException.notFound("Post not found."));

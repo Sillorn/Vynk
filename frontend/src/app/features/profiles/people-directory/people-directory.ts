@@ -241,7 +241,9 @@ export class PeopleDirectory {
         this.people.set(items);
         this.page.set(result.page);
         this.totalPages.set(result.totalPages);
-        this.totalElements.set(Math.max(0, result.totalElements - (user && result.items.some(isSelf) ? 1 : 0)));
+        this.totalElements.set(
+          Math.max(0, result.totalElements - (user && result.items.some(isSelf) ? 1 : 0)),
+        );
         this.hasNext.set(result.hasNext);
         this.loading.set(false);
       },

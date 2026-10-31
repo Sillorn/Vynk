@@ -105,15 +105,23 @@ export class PublicProfilePage {
         this.profile.set(result.profile);
         this.connected.set(false);
         this.invitationSent.set(false);
-        if (result.profile && this.auth.user() && this.auth.user()?.username.toLowerCase() !== result.profile.username.toLowerCase()) {
+        if (
+          result.profile &&
+          this.auth.user() &&
+          this.auth.user()?.username.toLowerCase() !== result.profile.username.toLowerCase()
+        ) {
           this.connections.isConnected(result.profile.username).subscribe({
             next: (connected) => {
               this.connected.set(connected);
               if (!connected) {
                 this.connections.outgoing().subscribe({
-                  next: (requests) => this.invitationSent.set(
-                    requests.some((request) => request.username.toLowerCase() === result.profile?.username.toLowerCase()),
-                  ),
+                  next: (requests) =>
+                    this.invitationSent.set(
+                      requests.some(
+                        (request) =>
+                          request.username.toLowerCase() === result.profile?.username.toLowerCase(),
+                      ),
+                    ),
                 });
               }
             },
@@ -131,8 +139,13 @@ export class PublicProfilePage {
     if (this.connectionBusy() || this.connected()) return;
     this.connectionBusy.set(true);
     this.connections.send(username).subscribe({
-      next: () => { this.invitationSent.set(true); this.connectionBusy.set(false); },
-      error: () => { this.connectionBusy.set(false); },
+      next: () => {
+        this.invitationSent.set(true);
+        this.connectionBusy.set(false);
+      },
+      error: () => {
+        this.connectionBusy.set(false);
+      },
     });
   }
 

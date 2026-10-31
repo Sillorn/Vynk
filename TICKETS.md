@@ -1,6 +1,6 @@
 # Implementation backlog — Vynk
 
-**63 tickets, M0–M6.** Dependency links refer to ticket IDs. No tickets have been created on GitHub and no implementation has started. `PROPOSED` tags are approval-gated pending Round 8.
+**64 tickets, M0–M6.** Dependency links refer to ticket IDs. No tickets have been created on GitHub and no implementation has started. `PROPOSED` tags are approval-gated pending Round 8.
 
 ## M0 — Foundation
 
@@ -262,6 +262,13 @@
 - **Depends on:** PN-004, PN-035
 - **Acceptance criteria:** Pending incoming/outgoing and accepted connections, relevant actions/feedback.
 - **Done when:** Automated checks appropriate to the change pass, errors and security cases are covered, and CI is green.
+
+### PN-064 — Define post audience and enforce feed visibility
+
+- **Priority:** P1 · **Relative size:** 5 points · **Decision:** CONFIRMED
+- **Depends on:** PN-027, PN-028, PN-029
+- **Acceptance criteria:** Posts have an explicit Public or Connections audience selected in the composer. The public feed returns only Public posts. The connections feed returns Public posts and Connections posts by accepted connections; authors see their own posts in either view. Edits preserve audience. Existing posts are migrated as Public. API and UI tests verify users who are neither authors nor accepted connections cannot read Connections posts or engage with them.
+- **Done when:** Automated checks appropriate to the change pass, unauthorized access is covered, and CI is green.
 
 ### PN-037 — Test posts network search and permissions
 

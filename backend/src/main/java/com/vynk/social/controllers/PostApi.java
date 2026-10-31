@@ -9,10 +9,11 @@ import java.time.Instant;
 public final class PostApi {
     private PostApi() {}
 
-    public record WriteRequest(@NotBlank @Size(max = 5000) String content) {}
-    public record PostResponse(Long id, String username, String content, Instant createdAt, Instant updatedAt) {
+    public record WriteRequest(@NotBlank @Size(max = 5000) String content,
+                               @jakarta.validation.constraints.Pattern(regexp = "PUBLIC|CONNECTIONS") String audience) {}
+    public record PostResponse(Long id, String username, String content, String audience, Instant createdAt, Instant updatedAt) {
         public static PostResponse from(Post post) {
-            return new PostResponse(post.getId(), post.getAuthor().getUsername(), post.getContent(),
+            return new PostResponse(post.getId(), post.getAuthor().getUsername(), post.getContent(), post.getAudience(),
                     post.getCreatedAt(), post.getUpdatedAt());
         }
     }

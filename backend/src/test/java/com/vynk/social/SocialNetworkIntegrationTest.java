@@ -72,7 +72,7 @@ class SocialNetworkIntegrationTest {
         mvc.perform(post("/api/v1/connections/requests/" + requestId + "/accept").session(bob).with(csrf()))
                 .andExpect(status().isOk());
         mvc.perform(get("/api/v1/posts/connections").session(bob))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].id").value(postId));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty());
 
         mvc.perform(post("/api/v1/posts/" + postId + "/comments").session(mallory).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"content\":\"x\"}"))

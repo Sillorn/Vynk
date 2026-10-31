@@ -27,6 +27,9 @@ public class Post {
     @Column(nullable = false, length = 5000)
     private String content;
 
+    @Column(nullable = false, length = 20)
+    private String audience = "PUBLIC";
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -35,9 +38,10 @@ public class Post {
 
     protected Post() {}
 
-    public Post(UserAccount author, String content) {
+    public Post(UserAccount author, String content, String audience) {
         this.author = author;
         this.content = content;
+        this.audience = audience;
     }
 
     @PreUpdate
@@ -46,6 +50,8 @@ public class Post {
     public Long getId() { return id; }
     public UserAccount getAuthor() { return author; }
     public String getContent() { return content; }
+    public String getAudience() { return audience; }
+    public void setAudience(String audience) { this.audience = audience; }
     public void setContent(String content) { this.content = content; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

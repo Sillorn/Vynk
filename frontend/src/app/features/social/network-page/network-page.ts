@@ -24,8 +24,22 @@ import { ConnectionRequest, ConnectionService } from '../../../core/social/conne
         <p class="surface-card" role="status">Sign in to manage your network.</p>
       } @else {
         <div class="tabs" role="tablist" aria-label="My network">
-          <button mat-button role="tab" [attr.aria-selected]="tab() === 'contacts'" (click)="tab.set('contacts')">Contacts</button>
-          <button mat-button role="tab" [attr.aria-selected]="tab() === 'invitations'" (click)="tab.set('invitations')">Invitations</button>
+          <button
+            mat-button
+            role="tab"
+            [attr.aria-selected]="tab() === 'contacts'"
+            (click)="tab.set('contacts')"
+          >
+            Contacts
+          </button>
+          <button
+            mat-button
+            role="tab"
+            [attr.aria-selected]="tab() === 'invitations'"
+            (click)="tab.set('invitations')"
+          >
+            Invitations
+          </button>
         </div>
         @if (tab() === 'contacts') {
           <section class="surface-card list">
@@ -38,70 +52,74 @@ import { ConnectionRequest, ConnectionService } from '../../../core/social/conne
                     <strong>{{ username }}</strong>
                     <span>&#64;{{ username }}</span>
                   </span>
-                  <span class="contact-card__action" aria-hidden="true">View profile <span>→</span></span>
+                  <span class="contact-card__action" aria-hidden="true"
+                    >View profile <span>→</span></span
+                  >
                 </a>
               }
             } @else {
-              <p class="muted">You don't have any contact yet, <a routerLink="/people">connect with people now!</a></p>
+              <p class="muted">
+                You don't have any contact yet, <a routerLink="/people">connect with people now!</a>
+              </p>
             }
           </section>
         } @else {
-        <form class="surface-card invite" (ngSubmit)="send()">
-          <label for="invite-user">Invite by username</label>
-          <div>
-            <input
-              id="invite-user"
-              name="username"
-              [(ngModel)]="username"
-              required
-              maxlength="30"
-              autocomplete="off"
-            /><button mat-flat-button type="submit" [disabled]="busy() || !username.trim()">
-              Send invitation
-            </button>
-          </div>
-        </form>
-        @if (message()) {
-          <p role="status">{{ message() }}</p>
-        }
-        @if (error()) {
-          <p class="error" role="alert">
-            {{ error() }} <button mat-button (click)="load()">Try again</button>
-          </p>
-        }
-        <section class="surface-card list">
-          <h2>Received invitations</h2>
-          @if (incoming().length) {
-            @for (request of incoming(); track request.id) {
-              <article>
-                <div>
-                  <a [href]="'/profile/' + request.username">{{ request.username }}</a
-                  ><time>{{ request.createdAt | date: 'mediumDate' }}</time>
-                </div>
-                <button mat-flat-button (click)="accept(request)">Accept</button
-                ><button mat-button (click)="decline(request)">Decline</button>
-              </article>
-            }
-          } @else {
-            <p class="muted">No pending invitations.</p>
+          <form class="surface-card invite" (ngSubmit)="send()">
+            <label for="invite-user">Invite by username</label>
+            <div>
+              <input
+                id="invite-user"
+                name="username"
+                [(ngModel)]="username"
+                required
+                maxlength="30"
+                autocomplete="off"
+              /><button mat-flat-button type="submit" [disabled]="busy() || !username.trim()">
+                Send invitation
+              </button>
+            </div>
+          </form>
+          @if (message()) {
+            <p role="status">{{ message() }}</p>
           }
-        </section>
-        <section class="surface-card list">
-          <h2>Sent invitations</h2>
-          @if (outgoing().length) {
-            @for (request of outgoing(); track request.id) {
-              <article>
-                <div>
-                  <a [href]="'/profile/' + request.username">{{ request.username }}</a
-                  ><time>{{ request.createdAt | date: 'mediumDate' }}</time>
-                </div>
-                <button mat-button (click)="cancel(request)">Cancel</button>
-              </article>
-            }
-          } @else {
-            <p class="muted">No outgoing invitations.</p>
+          @if (error()) {
+            <p class="error" role="alert">
+              {{ error() }} <button mat-button (click)="load()">Try again</button>
+            </p>
           }
-        </section>
+          <section class="surface-card list">
+            <h2>Received invitations</h2>
+            @if (incoming().length) {
+              @for (request of incoming(); track request.id) {
+                <article>
+                  <div>
+                    <a [href]="'/profile/' + request.username">{{ request.username }}</a
+                    ><time>{{ request.createdAt | date: 'mediumDate' }}</time>
+                  </div>
+                  <button mat-flat-button (click)="accept(request)">Accept</button
+                  ><button mat-button (click)="decline(request)">Decline</button>
+                </article>
+              }
+            } @else {
+              <p class="muted">No pending invitations.</p>
+            }
+          </section>
+          <section class="surface-card list">
+            <h2>Sent invitations</h2>
+            @if (outgoing().length) {
+              @for (request of outgoing(); track request.id) {
+                <article>
+                  <div>
+                    <a [href]="'/profile/' + request.username">{{ request.username }}</a
+                    ><time>{{ request.createdAt | date: 'mediumDate' }}</time>
+                  </div>
+                  <button mat-button (click)="cancel(request)">Cancel</button>
+                </article>
+              }
+            } @else {
+              <p class="muted">No outgoing invitations.</p>
+            }
+          </section>
         }
       }
     </section>
@@ -145,7 +163,10 @@ import { ConnectionRequest, ConnectionService } from '../../../core/social/conne
         border-radius: 0.75rem;
         color: inherit;
         text-decoration: none;
-        transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+        transition:
+          border-color 120ms ease,
+          background-color 120ms ease,
+          transform 120ms ease;
       }
       .contact-card + .contact-card {
         margin-top: 0.75rem;
@@ -243,8 +264,14 @@ export class NetworkPage {
     };
     this.busy.set(true);
     this.service.contacts().subscribe({
-      next: (value) => { this.contacts.set(value); done(); },
-      error: (err) => { this.fail(err); done(); },
+      next: (value) => {
+        this.contacts.set(value);
+        done();
+      },
+      error: (err) => {
+        this.fail(err);
+        done();
+      },
     });
     this.service.incoming().subscribe({
       next: (value) => {

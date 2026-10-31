@@ -5,6 +5,7 @@ export interface SocialPost {
   readonly id: number;
   readonly username: string;
   readonly content: string;
+  readonly audience: 'PUBLIC' | 'CONNECTIONS';
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -84,14 +85,18 @@ export class PostService {
     );
   }
 
-  create(content: string) {
-    return this.http.post<SocialPost>(this.endpoint, { content }, { withCredentials: true });
+  create(content: string, audience: 'PUBLIC' | 'CONNECTIONS') {
+    return this.http.post<SocialPost>(
+      this.endpoint,
+      { content, audience },
+      { withCredentials: true },
+    );
   }
 
-  update(id: number, content: string) {
+  update(id: number, content: string, audience: 'PUBLIC' | 'CONNECTIONS') {
     return this.http.put<SocialPost>(
       `${this.endpoint}/${id}`,
-      { content },
+      { content, audience },
       { withCredentials: true },
     );
   }

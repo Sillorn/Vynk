@@ -1,5 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -43,39 +50,48 @@ import {
             Connections
           </button>
         }
+        @if (auth.user()) {
+          <button class="new-post-button" mat-flat-button color="primary" (click)="openComposer()">
+            New post
+          </button>
+        }
       </nav>
 
-      @if (auth.user(); as user) {
-        <form class="surface-card composer" (ngSubmit)="publish()">
-          <label for="post-content">Share an update</label>
-          <textarea
-            id="post-content"
-            name="content"
-            [(ngModel)]="draft"
-            maxlength="5000"
-            required
-            rows="4"
-            placeholder="What would you like to share?"
-          ></textarea>
-          <div class="form-actions">
-            <span class="muted">{{ draft.length }}/5000</span
-            ><button
-              mat-flat-button
-              color="primary"
-              type="submit"
-              [disabled]="saving() || !draft.trim()"
-            >
-              {{ saving() ? 'Publishing…' : 'Publish' }}
-            </button>
-          </div>
-          @if (actionError()) {
-            <p class="error" role="alert">{{ actionError() }}</p>
-          }
-        </form>
-      } @else {
-        <p class="surface-card muted">
-          Sign in to share an update. The public feed is open to everyone.
-        </p>
+      @if (auth.user()) {
+        <dialog #composerDialog class="composer-dialog" aria-labelledby="composer-title">
+          <form class="surface-card composer" (ngSubmit)="publish()">
+            <h2 id="composer-title">New post</h2>
+            <label for="post-audience">Audience</label>
+            <select id="post-audience" name="audience" [(ngModel)]="draftAudience">
+              <option value="PUBLIC">Public</option>
+              <option value="CONNECTIONS">Connections</option>
+            </select>
+            <textarea
+              id="post-content"
+              name="content"
+              [(ngModel)]="draft"
+              maxlength="5000"
+              required
+              rows="4"
+              placeholder="What would you like to share?"
+            ></textarea>
+            <div class="form-actions">
+              <span class="muted">{{ draft.length }}/5000</span
+              ><button
+                mat-flat-button
+                color="primary"
+                type="submit"
+                [disabled]="saving() || !draft.trim()"
+              >
+                {{ saving() ? 'Publishing…' : 'Publish' }}
+              </button>
+            </div>
+            @if (actionError()) {
+              <p class="error" role="alert">{{ actionError() }}</p>
+            }
+            <button type="button" mat-button (click)="closeComposer()">Cancel</button>
+          </form>
+        </dialog>
       }
 
       @if (loading()) {
@@ -242,6 +258,58 @@ import {
       .feed-tabs .active {
         border-bottom: 2px solid currentColor;
       }
+      .new-post-button {
+        align-self: center;
+        margin: 0.25rem 0 0.75rem auto;
+      }
+      .composer-dialog {
+        width: min(34rem, calc(100vw - 2rem));
+        max-width: none;
+        padding: 0;
+        border: 0;
+        border-radius: 0.75rem;
+        background: transparent;
+      }
+      .composer-dialog::backdrop {
+        background: rgb(15 23 42 / 55%);
+      }
+      .composer-dialog .composer {
+        margin: 0;
+      }
+      .sign-in-prompt {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin: 1rem 0;
+        padding: 1.25rem 1.5rem;
+        border-color: var(--mat-sys-outline-variant);
+        border-radius: 0.75rem;
+        background: linear-gradient(
+          110deg,
+          var(--mat-sys-surface-container-high),
+          var(--mat-sys-surface-container-low) 75%
+        );
+      }
+      .sign-in-icon {
+        display: grid;
+        flex: 0 0 2.75rem;
+        width: 2.75rem;
+        height: 2.75rem;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--mat-sys-secondary-container);
+        color: var(--mat-sys-on-secondary-container);
+        font-size: 1.4rem;
+      }
+      .sign-in-prompt h2 {
+        margin: 0 0 0.25rem;
+        font-size: 1.05rem;
+      }
+      .sign-in-prompt p {
+        margin: 0;
+        color: var(--mat-sys-on-surface-variant);
+        line-height: 1.5;
+      }
       .composer,
       .post-card {
         display: grid;
@@ -310,6 +378,15 @@ import {
         gap: 1rem;
         padding: 2rem;
       }
+      .state:has(h2) {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+      }
+      .state:has(h2) h2,
+      .state:has(h2) p {
+        margin: 0;
+      }
       .error {
         color: #a52222;
       }
@@ -329,6 +406,7 @@ export class FeedPage {
   protected readonly auth = inject(AuthService);
   private readonly service = inject(PostService);
   protected readonly posts = signal<readonly SocialPost[]>([]);
+  private readonly composerDialog = viewChild<ElementRef<HTMLDialogElement>>('composerDialog');
   protected readonly page = signal(0);
   protected readonly totalPages = signal(0);
   protected readonly hasNext = signal(false);
@@ -346,6 +424,7 @@ export class FeedPage {
   protected readonly engagingId = signal<number | null>(null);
   protected commentDraft = '';
   protected draft = '';
+  protected draftAudience: 'PUBLIC' | 'CONNECTIONS' = 'PUBLIC';
 
   constructor() {
     this.load(0);
@@ -387,14 +466,22 @@ export class FeedPage {
     });
   }
 
+  protected openComposer(): void {
+    this.composerDialog()?.nativeElement.showModal();
+  }
+  protected closeComposer(): void {
+    this.composerDialog()?.nativeElement.close();
+  }
+
   protected publish(): void {
     const content = this.draft.trim();
     if (!content || this.saving()) return;
     this.saving.set(true);
     this.actionError.set(null);
-    this.service.create(content).subscribe({
+    this.service.create(content, this.draftAudience).subscribe({
       next: () => {
         this.draft = '';
+        this.closeComposer();
         this.saving.set(false);
         this.load(0);
       },
@@ -483,7 +570,7 @@ export class FeedPage {
   protected saveEdit(post: SocialPost): void {
     this.saving.set(true);
     this.actionError.set(null);
-    this.service.update(post.id, this.editContent().trim()).subscribe({
+    this.service.update(post.id, this.editContent().trim(), post.audience).subscribe({
       next: () => {
         this.cancelEdit();
         this.saving.set(false);
