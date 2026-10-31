@@ -11,6 +11,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter, interval, map } from 'rxjs';
 import { AuthService } from './core/auth/auth.service';
 import { ConnectionService } from './core/social/connection.service';
+import { MessagingService } from './core/social/messaging.service';
 
 interface NavItem {
   readonly label: string;
@@ -42,8 +43,10 @@ export class App {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly connections = inject(ConnectionService);
+  private readonly messaging = inject(MessagingService);
   protected readonly auth = inject(AuthService);
   protected readonly hasIncomingInvitations = signal(false);
+  protected readonly hasUnreadMessages = signal(false);
 
   protected readonly isHandset = toSignal(
     this.breakpointObserver.observe(MOBILE_BREAKPOINT).pipe(map((state) => state.matches)),
@@ -94,7 +97,10 @@ export class App {
 
     interval(60_000)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.refreshIncomingInvitations());
+      .subscribe(() => {
+        this.refreshIncomingInvitations();
+        this.refreshUnreadMessages();
+      });
 
     this.router.events
       .pipe(
@@ -104,6 +110,7 @@ export class App {
       .subscribe((event) => {
         this.menuOpen.set(false);
         this.refreshIncomingInvitations();
+        this.refreshUnreadMessages();
         const url = event.urlAfterRedirects;
         const publicPaths = ['/feed', '/login', '/register'];
         if (
@@ -124,6 +131,17 @@ export class App {
     this.connections.incoming().subscribe({
       next: (requests) => this.hasIncomingInvitations.set(requests.length > 0),
       error: () => this.hasIncomingInvitations.set(false),
+    });
+  }
+
+  private refreshUnreadMessages(): void {
+    if (!this.auth.user() || this.isOffline()) {
+      this.hasUnreadMessages.set(false);
+      return;
+    }
+    this.messaging.inbox().subscribe({
+      next: (items) => this.hasUnreadMessages.set(items.some((item) => item.unreadCount > 0)),
+      error: () => this.hasUnreadMessages.set(false),
     });
   }
 

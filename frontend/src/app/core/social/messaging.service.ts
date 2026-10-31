@@ -47,7 +47,7 @@ export class MessagingService {
   send(username: string, body: string) {
     return this.http.post<ConversationMessage>(
       `${this.endpoint}/with/${encodeURIComponent(username)}/messages`,
-      { body },
+      { body, clientRequestId: crypto.randomUUID() },
       { withCredentials: true },
     );
   }

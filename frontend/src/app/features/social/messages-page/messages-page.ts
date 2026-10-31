@@ -5,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from '../../../core/auth/auth.service';
 import { EventStreamService } from '../../../core/social/event-stream.service';
+import { ConnectionService } from '../../../core/social/connection.service';
+import { ProfileService } from '../../../core/profiles/profile.service';
 import {
   ConversationMessage,
   InboxItem,
@@ -33,6 +35,18 @@ import {
         <div class="messaging-layout">
           <aside class="surface-card inbox" aria-label="Conversations">
             <h2>Inbox</h2>
+            <div class="contact-picker">
+              <label for="new-conversation">Start a conversation</label>
+              <select
+                id="new-conversation"
+                (change)="startConversation($any($event.target).value)"
+              >
+              <option value="">Choose a contact…</option>
+              @for (contact of availableContacts(); track contact) {
+                <option [value]="contact">{{ displayName(contact) }}</option>
+              }
+              </select>
+            </div>
             @if (loadingInbox()) {
               <p role="status">Loading conversations…</p>
             } @else if (!inbox().length) {
@@ -49,7 +63,7 @@ import {
                   (click)="open(item)"
                 >
                   <span class="inbox-item__name"
-                    >{{ item.participantUsername }}
+                    >{{ displayName(item.participantUsername) }} <span class="username">&#64;{{ item.participantUsername }}</span>
                     @if (item.unreadCount) {
                       <span
                         class="badge"
@@ -73,8 +87,7 @@ import {
               <p class="muted">Choose a conversation to view messages.</p>
             } @else {
               <header class="conversation__header">
-                <h2>{{ selected()?.participantUsername }}</h2>
-                <button mat-button type="button" (click)="hideSelected()">Hide conversation</button>
+                <h2>{{ displayName(selected()?.participantUsername ?? '') }} <span class="username conversation-username">&#64;{{ selected()?.participantUsername }}</span></h2>
               </header>
               @if (loadingMessages()) {
                 <p role="status">Loading messages…</p>
@@ -105,7 +118,7 @@ import {
                     <span>{{
                       message.senderUsername === auth.user()?.username
                         ? 'You'
-                        : message.senderUsername
+                        : displayName(message.senderUsername)
                     }}</span>
                     <p>{{ message.body }}</p>
                     <time>{{ message.createdAt | date: 'short' }}</time>
@@ -153,6 +166,44 @@ import {
       .conversation h2 {
         margin: 0.25rem 0 1rem;
       }
+      .contact-picker {
+        display: grid;
+        gap: 0.45rem;
+        margin: 0 0 1rem;
+        padding: 0.85rem;
+        border: 1px solid var(--mat-sys-outline-variant);
+        border-radius: 0.75rem;
+        background: var(--mat-sys-surface-container-low);
+      }
+      .contact-picker label {
+        color: var(--mat-sys-on-surface-variant);
+        font-size: 0.85rem;
+        font-weight: 650;
+      }
+      .contact-picker select {
+        width: 100%;
+        min-height: 2.75rem;
+        padding: 0.6rem 2.5rem 0.6rem 0.75rem;
+        appearance: none;
+        color: var(--mat-sys-on-surface);
+        font: inherit;
+        font-size: 0.95rem;
+        border: 1px solid var(--mat-sys-outline);
+        border-radius: 0.5rem;
+        background-color: var(--mat-sys-surface-container-high);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23596675' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        cursor: pointer;
+      }
+      .contact-picker select:focus-visible {
+        outline: 3px solid var(--mat-sys-primary-container);
+        outline-offset: 2px;
+        border-color: var(--mat-sys-primary);
+      }
+      .contact-picker select:hover {
+        border-color: var(--mat-sys-on-surface-variant);
+      }
       .inbox-item {
         display: grid;
         width: 100%;
@@ -163,28 +214,39 @@ import {
         color: inherit;
         background: transparent;
         border: 0;
-        border-top: 1px solid #d8dee6;
+        border-top: 1px solid var(--mat-sys-outline-variant);
         cursor: pointer;
       }
       .inbox-item:hover,
       .inbox-item.selected {
-        background: #eef3f8;
+        background: var(--mat-sys-surface-container-high);
       }
       .inbox-item__name {
         font-weight: 650;
         display: flex;
         justify-content: space-between;
       }
+      .username {
+        color: color-mix(in srgb, var(--mat-sys-on-surface-variant) 70%, transparent);
+        font-size: 0.85em;
+        font-weight: normal;
+      }
+      .conversation-username {
+        display: inline-block;
+        margin-left: 0.35rem;
+        font-size: 0.65em;
+        vertical-align: baseline;
+      }
       .inbox-item__preview {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        color: #596675;
+        color: var(--mat-sys-on-surface-variant);
       }
       .inbox-item time,
       .message-list time {
         font-size: 0.8rem;
-        color: #596675;
+        color: var(--mat-sys-on-surface-variant);
       }
       .badge {
         display: inline-grid;
@@ -192,8 +254,8 @@ import {
         min-width: 1.4rem;
         height: 1.4rem;
         border-radius: 99px;
-        background: #244b74;
-        color: white;
+        background: var(--mat-sys-primary);
+        color: var(--mat-sys-on-primary);
         font-size: 0.75rem;
       }
       .conversation {
@@ -202,7 +264,17 @@ import {
         min-height: 28rem;
       }
       .conversation__header {
-        border-bottom: 1px solid #d8dee6;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
+      }
+      .conversation__header h2 {
+        flex: 1;
+      }
+      .conversation__header .conversation-username {
+        float: right;
       }
       .message-list {
         list-style: none;
@@ -220,11 +292,13 @@ import {
         align-self: flex-start;
         border-radius: 0.8rem;
         padding: 0.65rem 0.85rem;
-        background: #eef1f5;
+        background: var(--mat-sys-surface-container-high);
+        color: var(--mat-sys-on-surface);
       }
       .message-list li.own {
         align-self: flex-end;
-        background: #e2edf8;
+        background: var(--mat-sys-primary-container);
+        color: var(--mat-sys-on-primary-container);
       }
       .message-list p {
         margin: 0.25rem 0;
@@ -242,7 +316,7 @@ import {
       .composer {
         display: flex;
         gap: 0.75rem;
-        border-top: 1px solid #d8dee6;
+        border-top: 1px solid var(--mat-sys-outline-variant);
         padding-top: 0.75rem;
       }
       .composer textarea {
@@ -251,11 +325,13 @@ import {
         resize: vertical;
         padding: 0.65rem;
         font: inherit;
-        border: 1px solid #8b98a8;
+        color: var(--mat-sys-on-surface);
+        background: var(--mat-sys-surface-container-high);
+        border: 1px solid var(--mat-sys-outline);
         border-radius: 0.4rem;
       }
       .muted {
-        color: #596675;
+        color: var(--mat-sys-on-surface-variant);
       }
       .error {
         color: #a52222;
@@ -288,6 +364,17 @@ import {
 export class MessagesPage {
   protected readonly auth = inject(AuthService);
   private readonly service = inject(MessagingService);
+  private readonly connectionService = inject(ConnectionService);
+  private readonly profileService = inject(ProfileService);
+  private readonly names = signal<Record<string, string>>({});
+  protected displayName(username: string): string {
+    return this.names()[username] ?? username;
+  }
+  protected readonly contacts = signal<readonly string[]>([]);
+  protected readonly availableContacts = () => {
+    const conversations = new Set(this.inbox().map((item) => item.participantUsername));
+    return this.contacts().filter((contact) => !conversations.has(contact));
+  };
   private readonly eventStream = inject(EventStreamService);
   protected readonly inbox = signal<readonly InboxItem[]>([]);
   protected readonly selected = signal<InboxItem | null>(null);
@@ -305,6 +392,10 @@ export class MessagesPage {
     effect((onCleanup) => {
       if (this.auth.user()) {
         this.reload();
+        this.connectionService.contacts().subscribe({ next: (contacts) => {
+          this.contacts.set(contacts);
+          contacts.forEach((username) => this.loadName(username));
+        } });
         const disconnect = this.eventStream.connect(() => {
           // The SSE payload is only a hint; reconcile current state from REST.
           this.reload();
@@ -318,12 +409,23 @@ export class MessagesPage {
     });
   }
 
+  private loadName(username: string): void {
+    if (!username || this.names()[username]) return;
+    this.profileService.getPublicProfile(username).subscribe({
+      next: (profile) => this.names.update((names) => ({
+        ...names,
+        [username]: `${profile.firstName} ${profile.lastName}`.trim() || username,
+      })),
+    });
+  }
+
   protected reload(): void {
     this.error.set(null);
     this.loadingInbox.set(true);
     this.service.inbox().subscribe({
       next: (items) => {
         this.inbox.set(items);
+        items.forEach((item) => this.loadName(item.participantUsername));
         this.loadingInbox.set(false);
       },
       error: (err) => {
@@ -331,6 +433,19 @@ export class MessagesPage {
         this.loadingInbox.set(false);
       },
     });
+  }
+
+  protected startConversation(username: string): void {
+    if (!username) return;
+    const existing = this.inbox().find((item) => item.participantUsername === username);
+    if (existing) {
+      this.open(existing);
+      return;
+    }
+    this.selected.set({ conversationId: 0, participantId: 0, participantUsername: username, latestMessage: null, unreadCount: 0 });
+    this.messages.set([]);
+    this.page = 0;
+    this.hasOlder.set(false);
   }
 
   protected open(item: InboxItem): void {
@@ -374,6 +489,15 @@ export class MessagesPage {
     this.error.set(null);
     this.service.send(item.participantUsername, body).subscribe({
       next: (message) => {
+        const item: InboxItem = {
+          conversationId: message.conversationId,
+          participantId: 0,
+          participantUsername: message.senderUsername === this.auth.user()?.username
+            ? this.selected()?.participantUsername ?? '' : message.senderUsername,
+          latestMessage: message,
+          unreadCount: 0,
+        };
+        this.selected.set(item);
         this.messages.update((current) => [message, ...current]);
         this.draft = '';
         this.sending.set(false);
@@ -391,8 +515,15 @@ export class MessagesPage {
     if (!item) return;
     this.loadingMessages.set(true);
     this.historyError.set(null);
+    if (!item.conversationId) {
+      this.loadingMessages.set(false);
+      return;
+    }
     this.service.history(item.conversationId, this.page).subscribe({
       next: (response) => {
+        response.items.forEach((message) => {
+          if (message.senderUsername !== this.auth.user()?.username) this.loadName(message.senderUsername);
+        });
         this.messages.update((current) => {
           const combined = older
             ? [...current, ...response.items]
