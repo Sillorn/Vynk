@@ -15,7 +15,7 @@ import { NotificationItem, NotificationService } from '../../../core/social/noti
       <header class="page-intro">
         <p class="eyebrow">Your activity</p>
         <h1>Notifications</h1>
-        <p class="lede">Connection activity and other updates.</p>
+        <p class="lede">Updates that aren’t already shown in your network or messages.</p>
       </header>
       @if (!auth.user()) {
         <p class="surface-card" role="status">Sign in to view your notifications.</p>
@@ -82,7 +82,7 @@ import { NotificationItem, NotificationService } from '../../../core/social/noti
         justify-content: space-between;
         gap: 1rem;
         padding: 1rem 0.25rem;
-        border-bottom: 1px solid #d8dee6;
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
       }
       .notification:last-of-type {
         border-bottom: 0;
@@ -93,16 +93,17 @@ import { NotificationItem, NotificationService } from '../../../core/social/noti
       .notification time,
       .read-label,
       .muted {
-        color: #596675;
+        color: var(--mat-sys-on-surface-variant);
         font-size: 0.9rem;
       }
       .notification.unread {
-        border-left: 3px solid #244b74;
+        border-left: 3px solid var(--mat-sys-primary);
         padding-left: 0.75rem;
-        background: #f5f8fb;
+        background: var(--mat-sys-primary-container);
+        color: var(--mat-sys-on-primary-container);
       }
       .error {
-        color: #a52222;
+        color: var(--mat-sys-error);
       }
       @media (max-width: 560px) {
         .notification {
@@ -139,9 +140,7 @@ export class NotificationsPage {
   protected description(item: NotificationItem): string {
     const actor = item.actorUsername ? `${item.actorUsername} ` : '';
     const labels: Record<string, string> = {
-      CONNECTION_REQUEST: 'sent you a connection request.',
       CONNECTION_ACCEPTED: 'accepted your connection request.',
-      MESSAGE: 'sent you a message.',
     };
     return actor + (labels[item.type] ?? 'there is a new update for you.');
   }

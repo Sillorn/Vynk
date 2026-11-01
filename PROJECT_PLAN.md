@@ -30,7 +30,7 @@ Build an original LinkedIn-inspired, multi-user professional networking demonstr
 - **Profiles:** Biography, experience, education, skills, languages, projects, certifications, links; section-by-section explicit save/cancel; fixed section order, entry ordering within sections. No profile photo uploads; generated initials-based avatar.
 - **Social:** Public text-only chronological posts (plain text/line breaks/links), likes, flat comments, edit/delete owned posts/comments, public directory filtered by name/headline/skills; invitation-based mutual connections and accepted public connections; pending invitations private; chronological all-post and connection feeds.
 - **Messaging:** Only accepted connections can send; one 1:1 conversation per pair; immutable plain-text message history, hide a conversation locally, read-state/unread counts; no groups, typing indicators, online presence, attachments or delivery badges. Send via REST and notify with **SSE**; persist before notification and recover missed events by re-fetching data after reconnect.
-- **Notifications:** In-app connection and message activity, SSE updates, no email or browser push.
+- **Notifications:** A persisted in-app activity history for meaningful updates that do not already have a dedicated status indicator or destination. Do not create notification entries for incoming connection invitations or unread messages: network and messages indicators/inboxes already cover those. Keep accepted-connection updates in the center. No email or browser push; SSE refreshes the center when new notification events occur.
 - **CV:** On-demand public PDF from structured profile; fixed ATS-friendly single-column multi-page layout; excludes posts/connections/messages.
 - **Testing & release:** Unit, integration, API security, Angular component, and targeted E2E tests; GitHub Actions build/lint/test without auto-deploy; logs and restricted Actuator health; environment-driven config; documented consistent backup/restore and manual deployment/rollback; concise README with setup/test/deployment.
 - **Seed data:** Fictional profiles, experiences, connections, posts and conversations initialized in a controlled development/demo-only workflow.
@@ -50,7 +50,7 @@ The user did not respond to Round 8's Q116–Q137 individually. These are implem
 - Informational profile-completeness indicator; free-text case-insensitive distinct skills; multiple concurrent ongoing roles; validated HTTP/HTTPS links without preview fetching.
 - Re-invitations after declining, invitation/acceptance notification rules, like toggles, simple directory substring matching.
 - Hidden conversations reappear on incoming messages; conversations marked read when viewed; up to 4,000 characters/message; safe idempotent retry.
-- Persisted notification center with mark read/all read; notifications retained until parent content/account removal.
+- Persisted notification center with mark read/all read; show activity such as accepted connection requests, but exclude incoming invitations and unread-message alerts to avoid duplicating network/messages indicators. Notifications retained until parent content/account removal.
 - CV metadata/Unicode-capable fonts/clickable links; per-export section selection.
 - Shareable query-string search/pagination, public-endpoint limits and rate limits, demo users with ordinary account permissions.
 These defaults can be changed without reopening the settled platform architecture. Work on them should not start until approved.
@@ -149,7 +149,7 @@ Core entities (exact columns to be finalized with tickets):
 - Existing history remains viewable after disconnect; no new sends until reconnect. Hidden conversation is a per-user presentation state; no deletion for other participant.
 - Unread states are per recipient; conversation list sorted by last activity; newest messages loaded first then older messages incrementally.
 - SSE emits event metadata, not full message bodies. Reconnection triggers authoritative REST refresh, handles missed events, and uses bounded retry/backoff. No service-worker caching for stream/private APIs.
-- Notifications: connection invitations, accepted invitations, unread-message counts; UI in-app only, no push or email.
+- Notifications: accepted-connection activity and future updates without an existing dedicated indicator; exclude connection invitations and unread-message alerts. The network and messages indicators remain the actionable status cues. UI is an in-app activity history only, no push or email.
 
 ### CV export
 - Public endpoint returns PDF for a public username, created on demand from current profile fields. Stable single-column ATS-friendly layout, multiple pages, reasonable typography and meaningful headings.
@@ -166,7 +166,7 @@ Core entities (exact columns to be finalized with tickets):
 | Engagement | `PUT/DELETE /api/v1/posts/{id}/like`; `GET/POST /api/v1/posts/{id}/comments`; owner comment edits/deletes |
 | Network | `GET/POST /api/v1/connections/requests`; accept/decline/cancel endpoints; `DELETE /api/v1/connections/{userId}` |
 | Messages | `GET /api/v1/conversations`; `GET /api/v1/conversations/{id}/messages`; `POST .../messages`; mark-read/hide operations |
-| Notifications | `GET /api/v1/notifications`; mark read and unread count |
+| Notifications | `GET /api/v1/notifications`; mark read and unread count for notification-center items |
 | Events | `GET /api/v1/events` authenticated SSE |
 | CV | `GET /api/v1/profiles/{username}/cv` |
 
