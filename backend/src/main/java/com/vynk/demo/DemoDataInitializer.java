@@ -8,6 +8,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 /** Optional, idempotent fictional demo data. Disabled unless explicitly enabled. */
 @Component
 public class DemoDataInitializer implements ApplicationRunner {
@@ -32,7 +34,8 @@ public class DemoDataInitializer implements ApplicationRunner {
         for (int i = 0; i < usernames.length; i++) {
             Long existing = jdbc.query("SELECT id FROM user_account WHERE username_lower = ?", rs -> rs.next() ? rs.getLong(1) : null, usernames[i]);
             if (existing == null) {
-                jdbc.update("INSERT INTO user_account(username,password_hash,status) VALUES(?,?,'ACTIVE')", usernames[i], passwordEncoder.encode("Demo-Vynk-2026!"));
+                jdbc.update("INSERT INTO user_account(username,username_lower,password_hash,status) VALUES(?,LOWER(?),?,'ACTIVE')",
+                    usernames[i], usernames[i], passwordEncoder.encode("Demo-Vynk-2026!"));
                 existing = jdbc.queryForObject("SELECT id FROM user_account WHERE username_lower = ?", Long.class, usernames[i]);
             }
             users[i] = existing;
@@ -59,7 +62,8 @@ public class DemoDataInitializer implements ApplicationRunner {
             conversation = jdbc.queryForObject("SELECT id FROM conversation WHERE user_low_id=? AND user_high_id=?", Long.class, Math.min(users[0], users[1]), Math.max(users[0], users[1]));
         }
         if (jdbc.queryForObject("SELECT COUNT(*) FROM conversation_message WHERE conversation_id=?", Integer.class, conversation) == 0)
-            jdbc.update("INSERT INTO conversation_message(conversation_id,sender_id,body) VALUES(?,?,?)", conversation, users[0], "Hi Jordan! Thanks for connecting. Looking forward to exchanging ideas.");
+            jdbc.update("INSERT INTO conversation_message(conversation_id,sender_id,client_request_id,body) VALUES(?,?,?,?)",
+                conversation, users[0], UUID.randomUUID(), "Hi Jordan! Thanks for connecting. Looking forward to exchanging ideas.");
         for (long user : new long[]{users[0], users[1]})
             jdbc.update("MERGE INTO conversation_user_state(conversation_id,user_id,hidden) KEY(conversation_id,user_id) VALUES(?,?,FALSE)", conversation, user);
     }
