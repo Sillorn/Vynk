@@ -35,15 +35,6 @@ import {
         <div class="messaging-layout">
           <aside class="surface-card inbox" aria-label="Conversations">
             <h2>Inbox</h2>
-            <div class="contact-picker">
-              <label for="new-conversation">Start a conversation</label>
-              <select id="new-conversation" (change)="startConversation($any($event.target).value)">
-                <option value="">Choose a contact…</option>
-                @for (contact of availableContacts(); track contact) {
-                  <option [value]="contact">{{ displayName(contact) }}</option>
-                }
-              </select>
-            </div>
             @if (loadingInbox()) {
               <p role="status">Loading conversations…</p>
             } @else if (!inbox().length) {
@@ -144,6 +135,19 @@ import {
               </form>
             }
           </section>
+          <aside class="surface-card contacts-panel" aria-label="Contacts without conversations">
+            <h2>New conversation</h2>
+            @if (availableContacts().length) {
+              @for (contact of availableContacts(); track contact) {
+                <button class="contact-item" type="button" (click)="startConversation(contact)">
+                  <span>{{ displayName(contact) }}</span>
+                  <span class="username">&#64;{{ contact }}</span>
+                </button>
+              }
+            } @else {
+              <p class="muted">All your contacts have a conversation.</p>
+            }
+          </aside>
         </div>
       }
     </section>
@@ -156,12 +160,13 @@ import {
       }
       .messaging-layout {
         display: grid;
-        grid-template-columns: minmax(15rem, 0.8fr) minmax(0, 1.6fr);
+        grid-template-columns: minmax(14rem, 0.8fr) minmax(0, 1.6fr) minmax(13rem, 0.7fr);
         gap: 1rem;
         align-items: start;
       }
       .inbox,
-      .conversation {
+      .conversation,
+      .contacts-panel {
         padding: 1rem;
         min-width: 0;
       }
@@ -169,43 +174,24 @@ import {
       .conversation h2 {
         margin: 0.25rem 0 1rem;
       }
-      .contact-picker {
+      .contact-item {
         display: grid;
-        gap: 0.45rem;
-        margin: 0 0 1rem;
-        padding: 0.85rem;
-        border: 1px solid var(--mat-sys-outline-variant);
-        border-radius: 0.75rem;
-        background: var(--mat-sys-surface-container-low);
-      }
-      .contact-picker label {
-        color: var(--mat-sys-on-surface-variant);
-        font-size: 0.85rem;
-        font-weight: 650;
-      }
-      .contact-picker select {
         width: 100%;
-        min-height: 2.75rem;
-        padding: 0.6rem 2.5rem 0.6rem 0.75rem;
-        appearance: none;
-        color: var(--mat-sys-on-surface);
+        gap: 0.25rem;
+        padding: 0.8rem 0;
+        text-align: left;
         font: inherit;
-        font-size: 0.95rem;
-        border: 1px solid var(--mat-sys-outline);
-        border-radius: 0.5rem;
-        background-color: var(--mat-sys-surface-container-high);
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23596675' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
+        color: inherit;
+        background: transparent;
+        border: 0;
+        border-top: 1px solid var(--mat-sys-outline-variant);
         cursor: pointer;
       }
-      .contact-picker select:focus-visible {
-        outline: 3px solid var(--mat-sys-primary-container);
-        outline-offset: 2px;
-        border-color: var(--mat-sys-primary);
+      .contact-item:hover {
+        background: var(--mat-sys-surface-container-high);
       }
-      .contact-picker select:hover {
-        border-color: var(--mat-sys-on-surface-variant);
+      .contact-item .username {
+        font-size: 0.85rem;
       }
       .inbox-item {
         display: grid;
