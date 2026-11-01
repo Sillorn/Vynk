@@ -12,6 +12,7 @@ import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ProfileService } from '../../../core/profiles/profile.service';
 import {
   PostEngagement,
   PostService,
@@ -119,7 +120,9 @@ import {
           @for (post of posts(); track post.id) {
             <article class="surface-card post-card">
               <header>
-                <strong>{{ post.username }}</strong
+                <span class="post-author"
+                  ><strong>{{ displayName(post.username) }}</strong>
+                  <span>&#64;{{ post.username }}</span></span
                 ><time [attr.datetime]="post.createdAt">{{ post.createdAt | date: 'medium' }}</time>
               </header>
               @if (editingId() === post.id) {
@@ -143,34 +146,36 @@ import {
                 </div>
               } @else {
                 <p class="post-content">{{ post.content }}</p>
+              }
+              <div class="post-actions">
                 @if (auth.user()?.username?.toLowerCase() === post.username.toLowerCase()) {
-                  <footer>
+                  <div class="footer-actions">
                     <button mat-button (click)="startEdit(post)">Edit</button
                     ><button mat-button (click)="remove(post)">Delete</button>
-                  </footer>
+                  </div>
                 }
-              }
-              <div class="engagement-actions">
-                @if (auth.user()) {
+                <div class="engagement-actions">
+                  @if (auth.user()) {
+                    <button
+                      mat-button
+                      [attr.aria-pressed]="engagement()[post.id]?.liked ?? false"
+                      [disabled]="engagingId() === post.id"
+                      (click)="toggleLike(post)"
+                    >
+                      {{ engagement()[post.id]?.liked ? 'Unlike' : 'Like' }} ·
+                      {{ engagement()[post.id]?.likeCount ?? '…' }}
+                    </button>
+                  } @else {
+                    <span>{{ engagement()[post.id]?.likeCount ?? '…' }} likes</span>
+                  }
                   <button
                     mat-button
-                    [attr.aria-pressed]="engagement()[post.id]?.liked ?? false"
-                    [disabled]="engagingId() === post.id"
-                    (click)="toggleLike(post)"
+                    [attr.aria-expanded]="expandedPostId() === post.id"
+                    (click)="toggleComments(post)"
                   >
-                    {{ engagement()[post.id]?.liked ? 'Unlike' : 'Like' }} ·
-                    {{ engagement()[post.id]?.likeCount ?? '…' }}
+                    Comments · {{ engagement()[post.id]?.commentCount ?? '…' }}
                   </button>
-                } @else {
-                  <span>{{ engagement()[post.id]?.likeCount ?? '…' }} likes</span>
-                }
-                <button
-                  mat-button
-                  [attr.aria-expanded]="expandedPostId() === post.id"
-                  (click)="toggleComments(post)"
-                >
-                  Comments · {{ engagement()[post.id]?.commentCount ?? '…' }}
-                </button>
+                </div>
               </div>
               @if (expandedPostId() === post.id) {
                 <section
@@ -326,6 +331,15 @@ import {
         border: 1px solid #8b98a8;
         border-radius: 0.5rem;
       }
+      .post-author {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+      }
+      .post-author span {
+        color: #5e6875;
+        font-size: 0.9rem;
+      }
       .post-card header {
         display: flex;
         justify-content: space-between;
@@ -342,11 +356,24 @@ import {
         overflow-wrap: anywhere;
         margin: 0.3rem 0;
       }
-      .post-card footer,
+      .post-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+      .footer-actions,
       .engagement-actions {
         display: flex;
-        justify-content: flex-end;
+        align-items: center;
         gap: 0.5rem;
+      }
+      .footer-actions {
+        justify-content: flex-start;
+      }
+      .engagement-actions {
+        justify-content: flex-end;
+        margin-left: auto;
       }
       .comments {
         display: grid;
@@ -405,6 +432,8 @@ import {
 export class FeedPage {
   protected readonly auth = inject(AuthService);
   private readonly service = inject(PostService);
+  private readonly profileService = inject(ProfileService);
+  protected readonly names = signal<Record<string, string>>({});
   protected readonly posts = signal<readonly SocialPost[]>([]);
   private readonly composerDialog = viewChild<ElementRef<HTMLDialogElement>>('composerDialog');
   protected readonly page = signal(0);
@@ -430,6 +459,10 @@ export class FeedPage {
     this.load(0);
   }
 
+  protected displayName(username: string): string {
+    return this.names()[username] ?? username;
+  }
+
   protected selectFeed(type: 'public' | 'connections'): void {
     if (this.feedType() === type) return;
     this.feedType.set(type);
@@ -446,6 +479,16 @@ export class FeedPage {
     request.subscribe({
       next: (result) => {
         this.posts.set(result.items);
+        for (const username of new Set(result.items.map((post) => post.username))) {
+          if (this.names()[username]) continue;
+          this.profileService.getPublicProfile(username).subscribe({
+            next: (profile) =>
+              this.names.update((current) => ({
+                ...current,
+                [username]: `${profile.firstName} ${profile.lastName}`.trim() || username,
+              })),
+          });
+        }
         this.engagement.set({});
         this.expandedPostId.set(null);
         for (const post of result.items) {
