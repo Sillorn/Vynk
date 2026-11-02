@@ -1,6 +1,6 @@
 # Vynk
 
-Vynk is a professional networking demo — a monorepo for an original, LinkedIn-inspired application.
+Vynk is a professional networking demo — for an original, LinkedIn-inspired application.
 
 ## Structure
 - `frontend/` — Angular 22 (standalone) PWA
