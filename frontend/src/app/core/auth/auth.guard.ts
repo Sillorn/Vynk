@@ -11,6 +11,6 @@ export const authGuard: CanActivateFn = () => {
   return toObservable(auth.loading).pipe(
     filter((loading) => !loading),
     take(1),
-    map(() => auth.user() ? true : router.createUrlTree(['/feed'])),
+    map(() => (auth.user() ? true : router.createUrlTree(['/feed']))),
   );
 };
