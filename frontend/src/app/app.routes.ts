@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'feed' },
@@ -17,18 +18,21 @@ export const routes: Routes = [
   },
   {
     path: 'network',
+    canActivate: [authGuard],
     title: 'My network',
     loadComponent: () =>
       import('./features/social/network-page/network-page').then((m) => m.NetworkPage),
   },
   {
     path: 'messages',
+    canActivate: [authGuard],
     title: 'Messages',
     loadComponent: () =>
       import('./features/social/messages-page/messages-page').then((m) => m.MessagesPage),
   },
   {
     path: 'notifications',
+    canActivate: [authGuard],
     title: 'Notifications',
     loadComponent: () =>
       import('./features/social/notifications-page/notifications-page').then(
@@ -37,6 +41,7 @@ export const routes: Routes = [
   },
   {
     path: 'settings',
+    canActivate: [authGuard],
     title: 'Settings',
     loadComponent: () =>
       import('./features/settings/settings-page/settings-page').then((m) => m.SettingsPage),
@@ -54,6 +59,7 @@ export const routes: Routes = [
   },
   {
     path: 'profile/edit',
+    canActivate: [authGuard],
     title: 'Edit profile',
     loadComponent: () =>
       import('./features/profiles/profile-editor/profile-editor').then((m) => m.ProfileEditor),

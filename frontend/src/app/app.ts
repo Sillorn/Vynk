@@ -111,15 +111,6 @@ export class App {
         this.menuOpen.set(false);
         this.refreshIncomingInvitations();
         this.refreshUnreadMessages();
-        const url = event.urlAfterRedirects;
-        const publicPaths = ['/feed', '/login', '/register'];
-        if (
-          !this.auth.loading() &&
-          !this.auth.user() &&
-          !publicPaths.some((path) => url === path || url.startsWith(`${path}/`))
-        ) {
-          void this.router.navigateByUrl('/feed');
-        }
       });
   }
 

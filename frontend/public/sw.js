@@ -1,5 +1,5 @@
 /* App-shell caching only: API calls and the authenticated event stream always use the network. */
-const CACHE = 'vynk-shell-v1';
+const CACHE = 'vynk-shell-v2';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.svg', '/icons/icon-512.svg'];
 
 self.addEventListener('install', event => {
@@ -28,12 +28,12 @@ self.addEventListener('fetch', event => {
   }
 
   if (url.pathname.startsWith('/assets/') || /\.(?:js|css|svg|ico|woff2?)$/i.test(url.pathname)) {
-    event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => {
+    event.respondWith(fetch(request).then(response => {
       if (response.ok) {
         const copy = response.clone();
         event.waitUntil(caches.open(CACHE).then(cache => cache.put(request, copy)));
       }
       return response;
-    })));
+    }).catch(async () => (await caches.match(request)) || Response.error()));
   }
 });
