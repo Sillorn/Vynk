@@ -15,6 +15,8 @@
 3. Ensure the backend binds only to loopback, NGINX serves the frontend and proxies same-origin `/api/` traffic, and SSE proxy buffering is disabled. Do not expose port 8080 publicly.
 4. Deploy with `deploy/alpine/scripts/deploy-release.sh VERSION /path/to/vynk.jar /path/to/browser-dist`. Confirm the service health check and verify the site through HTTPS. Retain the prior release until the new one is confirmed.
 
+For the complete host-side health, deployment, rollback, backup, restore, and incident procedures, see [the operations runbook](operations-runbook.md).
+
 ## Backup and recovery
 
 - Create a consistent online H2 backup with `deploy/alpine/scripts/backup-h2.sh [absolute-destination.zip]`. Store backups outside the application/data directory with restrictive permissions, and maintain a separate off-host copy.

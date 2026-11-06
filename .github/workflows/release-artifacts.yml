@@ -1,0 +1,84 @@
+name: Release artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-artifacts-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and attest release artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Build backend
+        working-directory: backend
+        run: ./mvnw -B -ntp -DskipTests package
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble checksummed release bundle
+        id: bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          jar=$(find backend/target -maxdepth 1 -type f -name '*.jar' ! -name '*.original' | head -n 1)
+          test -n "$jar"
+          cp "$jar" release/vynk.jar
+          test -d frontend/dist/frontend/browser
+          tar -C frontend/dist/frontend/browser -czf release/frontend-dist.tar.gz .
+          printf '%s\n' "${GITHUB_REF_NAME:-${GITHUB_SHA::12}}" > release/VERSION
+          (cd release && sha256sum vynk.jar frontend-dist.tar.gz VERSION > SHA256SUMS)
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: release/vynk.jar
+
+      - name: Attest frontend provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: release/frontend-dist.tar.gz
+
+      - name: Upload release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: vynk-release-${{ github.ref_name }}
+          path: release/
+          if-no-files-found: error
+          retention-days: 90

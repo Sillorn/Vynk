@@ -372,13 +372,13 @@
 
 ### PN-060 — Document operational release and recovery runbooks
 
-- **Type:** Task · **Priority:** P1 · **Relative size:** 3 points · **Decision:** CONFIRMED · **Status:** Backlog
+- **Type:** Task · **Priority:** P1 · **Relative size:** 3 points · **Decision:** CONFIRMED · **Status:** Done
 - **Depends on:** PN-057, PN-058, PN-059
 - **Acceptance criteria:** Backup restore, rollback, health checks and incident steps documented
 
 ### PN-061 — Add CI release artifact and provenance
 
-- **Type:** Task · **Priority:** P1 · **Relative size:** 3 points · **Decision:** CONFIRMED · **Status:** Backlog
+- **Type:** Task · **Priority:** P1 · **Relative size:** 3 points · **Decision:** CONFIRMED · **Status:** Done
 - **Depends on:** PN-006, PN-058
 - **Acceptance criteria:** Build artifacts checksummed; dependency provenance retained; no automatic deploy
 
