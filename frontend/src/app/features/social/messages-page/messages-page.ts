@@ -475,6 +475,16 @@ export class MessagesPage {
   protected hideSelected(): void {
     const item = this.selected();
     if (!item) return;
+    if (
+      !globalThis.confirm(
+        'Hide this conversation? It will stay hidden until you send a message or ' +
+          '@' +
+          item.participantUsername +
+          ' sends you one.',
+      )
+    ) {
+      return;
+    }
     this.service.hide(item.conversationId).subscribe({
       next: () => {
         this.inbox.update((rows) =>

@@ -96,6 +96,7 @@ describe('MessagesPage', () => {
     const { page, fixture } = create();
     messaging.history.mockReturnValue(of({ items: [], hasNext: false }));
     messaging.hide.mockReturnValue(of(undefined));
+    const confirmSpy = vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
     page.open(item(1, 'bob'));
     fixture.detectChanges();
     const button = Array.from(
@@ -103,8 +104,26 @@ describe('MessagesPage', () => {
     ).find((b) => b.textContent?.includes('Hide conversation'));
     expect(button).toBeTruthy();
     button!.click();
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('until you send a message'));
     expect(messaging.hide).toHaveBeenCalledWith(1);
     expect(page.selected()).toBeNull();
+    confirmSpy.mockRestore();
+  });
+
+  it('does not hide the conversation when the confirmation is cancelled', () => {
+    const { page, fixture } = create();
+    messaging.history.mockReturnValue(of({ items: [], hasNext: false }));
+    messaging.hide.mockClear();
+    const confirmSpy = vi.spyOn(globalThis, 'confirm').mockReturnValue(false);
+    page.open(item(1, 'bob'));
+    fixture.detectChanges();
+    const button = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((b) => b.textContent?.includes('Hide conversation'));
+    button!.click();
+    expect(messaging.hide).not.toHaveBeenCalled();
+    expect(page.selected()).not.toBeNull();
+    confirmSpy.mockRestore();
   });
 
   it('ignores a stale history response after switching conversations', () => {
