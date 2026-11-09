@@ -296,9 +296,9 @@
 
 ### PN-048 — Messaging integration, SSE and authorization tests
 
-- **Type:** Story · **Priority:** P1 · **Relative size:** 8 points · **Decision:** PROPOSED · **Status:** Backlog
+- **Type:** Story · **Priority:** P1 · **Relative size:** 8 points · **Decision:** CONFIRMED · **Status:** Done
 - **Depends on:** PN-039, PN-040, PN-041, PN-042, PN-043, PN-044, PN-045, PN-046
-- **Acceptance criteria:** Two-user messaging and third-party denial, disconnect, reconnect, reload pass
+- **Acceptance criteria:** Integration coverage verifies two-user messaging, unread/history reload, third-party denial, hide-and-reopen recovery, and authenticated SSE access.
 
 ## M5 — Quality and PWA
 

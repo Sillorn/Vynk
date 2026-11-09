@@ -19,9 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:vynk-social;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.flyway.enabled=false"
+        "spring.datasource.url=jdbc:h2:mem:vynk-social;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
 })
 class SocialNetworkIntegrationTest {
     private static final String PASSWORD = "social-test-password";
@@ -80,6 +78,47 @@ class SocialNetworkIntegrationTest {
         mvc.perform(get("/api/v1/posts/" + postId + "/comments").param("page", "0").param("size", "1"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(1))
                 .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
+    void messagingSupportsTwoUsersAndRecoveryWhileDenyingThirdPartyAccess() throws Exception {
+        MockHttpSession alice = register("messagealice", "Alice", "Sender");
+        MockHttpSession bob = register("messagebob", "Bob", "Recipient");
+        MockHttpSession mallory = register("messagemallory", "Mallory", "Outsider");
+        mvc.perform(post("/api/v1/connections/messagebob/requests").session(alice).with(csrf()))
+                .andExpect(status().isOk());
+        MvcResult incoming = mvc.perform(get("/api/v1/connections/requests/incoming").session(bob))
+                .andExpect(status().isOk()).andReturn();
+        long requestId = mapper.readTree(incoming.getResponse().getContentAsString()).get(0).get("id").asLong();
+        mvc.perform(post("/api/v1/connections/requests/" + requestId + "/accept").session(bob).with(csrf()))
+                .andExpect(status().isOk());
+
+        String payload = mapper.writeValueAsString(java.util.Map.of("body", "hello Bob",
+                "clientRequestId", java.util.UUID.randomUUID().toString()));
+        MvcResult sent = mvc.perform(post("/api/v1/conversations/with/messagebob/messages").session(alice).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(payload))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.body").value("hello Bob")).andReturn();
+        long conversationId = mapper.readTree(sent.getResponse().getContentAsString()).get("conversationId").asLong();
+        mvc.perform(get("/api/v1/conversations").session(bob))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].unreadCount").value(1));
+        mvc.perform(get("/api/v1/conversations/" + conversationId + "/messages").session(bob)
+                        .param("page", "0").param("size", "20"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].body").value("hello Bob"));
+        mvc.perform(get("/api/v1/conversations/" + conversationId + "/messages").session(mallory)
+                        .param("page", "0").param("size", "20"))
+                .andExpect(status().isNotFound());
+
+        mvc.perform(delete("/api/v1/conversations/" + conversationId).session(bob).with(csrf()))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/conversations").session(bob))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+        mvc.perform(post("/api/v1/conversations/with/messagebob/messages").session(alice).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(java.util.Map.of(
+                                "body", "hello again", "clientRequestId", java.util.UUID.randomUUID().toString()))))
+                .andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/conversations").session(bob))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
+        mvc.perform(get("/api/v1/events").session(mallory)).andExpect(status().isOk());
     }
 
     private long createPost(MockHttpSession session, String content) throws Exception {
