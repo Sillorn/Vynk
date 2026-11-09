@@ -101,6 +101,26 @@ class ProfileCvIntegrationTest {
     }
 
     @Test
+    void sectionListsAreCappedSearchIsLiteral() throws Exception {
+        MockHttpSession session = register("capuser", "Cap", "User");
+        register("percent", "100%", "Sure");
+        register("plainone", "Plain", "Person");
+
+        String tooMany = "{\"items\":[" + "{\"name\":\"x\"},".repeat(50) + "{\"name\":\"x\"}]}";
+        mockMvc.perform(put("/api/v1/profiles/me/skills").session(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(tooMany))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/profiles").param("q", "%"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .jsonPath("$.items.length()").value(1));
+        mockMvc.perform(get("/api/v1/profiles").param("q", "x".repeat(101)))
+                .andExpect(status().isBadRequest());
+
+    }
+
+    @Test
     void cvIsPublicValidPdfAndContainsProfileDataOnly() throws Exception {
         register("cvuser", "Zoë", "Unicode");
         UserAccount user = users.findByUsernameIgnoreCase("cvuser").orElseThrow();

@@ -42,6 +42,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProfileService {
 
     private final ProfileRepository profiles;
+    private static final int MAX_SEARCH_LENGTH = 100;
+
     private final PeopleSearchRepository peopleSearch;
     private final ProfileExperienceRepository experience;
     private final ProfileEducationRepository education;
@@ -74,6 +76,11 @@ public class ProfileService {
     @Transactional(readOnly = true)
     public PageResponse<PeopleSearchResponse> searchPeople(String query, PageQuery page) {
         String normalized = query == null ? "" : query.trim();
+        if (normalized.length() > MAX_SEARCH_LENGTH) {
+            throw ApiException.validationFailed("Search text must be at most " + MAX_SEARCH_LENGTH + " characters.");
+        }
+        // Treat the text literally: LIKE wildcards typed by the user must not widen the match.
+        normalized = normalized.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
         var result = peopleSearch.search(normalized, PageRequest.of(
                 page.pageNumber(), page.pageSize(), Sort.unsorted()));
         return PageResponse.of(result.getContent().stream().map(PeopleSearchResponse::from).toList(),

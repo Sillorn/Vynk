@@ -30,7 +30,7 @@ public final class ProfileUpdateRequests {
             @NotBlank @Size(max = 500) String url) {
     }
 
-    public record Links(@Valid List<LinkItem> items) {
+    public record Links(@Valid @Size(max = 50) List<LinkItem> items) {
     }
 
     public record ExperienceItem(
@@ -43,7 +43,7 @@ public final class ProfileUpdateRequests {
             @Size(max = 4000) String description) {
     }
 
-    public record Experience(@Valid List<ExperienceItem> items) {
+    public record Experience(@Valid @Size(max = 50) List<ExperienceItem> items) {
     }
 
     public record EducationItem(
@@ -55,7 +55,7 @@ public final class ProfileUpdateRequests {
             @Size(max = 4000) String description) {
     }
 
-    public record Education(@Valid List<EducationItem> items) {
+    public record Education(@Valid @Size(max = 50) List<EducationItem> items) {
     }
 
     public record CertificationItem(
@@ -66,7 +66,7 @@ public final class ProfileUpdateRequests {
             @Size(max = 500) String credentialUrl) {
     }
 
-    public record Certifications(@Valid List<CertificationItem> items) {
+    public record Certifications(@Valid @Size(max = 50) List<CertificationItem> items) {
     }
 
     public record ProjectItem(
@@ -77,13 +77,13 @@ public final class ProfileUpdateRequests {
             LocalDate endDate) {
     }
 
-    public record Projects(@Valid List<ProjectItem> items) {
+    public record Projects(@Valid @Size(max = 50) List<ProjectItem> items) {
     }
 
     public record SkillItem(@NotBlank @Size(max = 100) String name) {
     }
 
-    public record Skills(@Valid List<SkillItem> items) {
+    public record Skills(@Valid @Size(max = 50) List<SkillItem> items) {
     }
 
     public record LanguageItem(
@@ -91,6 +91,6 @@ public final class ProfileUpdateRequests {
             @Size(max = 50) String proficiency) {
     }
 
-    public record Languages(@Valid List<LanguageItem> items) {
+    public record Languages(@Valid @Size(max = 50) List<LanguageItem> items) {
     }
 }

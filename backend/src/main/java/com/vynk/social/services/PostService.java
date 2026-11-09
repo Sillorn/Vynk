@@ -1,5 +1,6 @@
 package com.vynk.social.services;
 
+import com.vynk.connections.repositories.AcceptedConnectionRepository;
 import com.vynk.identity.entities.UserAccount;
 import com.vynk.identity.repositories.UserAccountRepository;
 import com.vynk.shared.api.PageQuery;
@@ -24,13 +25,16 @@ public class PostService {
     private final UserAccountRepository accounts;
     private final PostCommentRepository comments;
     private final PostLikeRepository likes;
+    private final AcceptedConnectionRepository connections;
 
     public PostService(PostRepository posts, UserAccountRepository accounts,
-                       PostCommentRepository comments, PostLikeRepository likes) {
+                       PostCommentRepository comments, PostLikeRepository likes,
+                       AcceptedConnectionRepository connections) {
         this.posts = posts;
         this.accounts = accounts;
         this.comments = comments;
         this.likes = likes;
+        this.connections = connections;
     }
 
     @Transactional(readOnly = true)
@@ -77,21 +81,17 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostApi.EngagementResponse engagement(long postId, String username) {
-        if (!posts.existsById(postId)) throw ApiException.notFound("Post not found.");
-        boolean liked = false;
-        if (username != null) {
-            UserAccount account = accounts.findByUsernameIgnoreCase(username)
-                    .orElseThrow(() -> ApiException.notFound("Account not found."));
-            liked = likes.existsById(new PostLikeId(postId, account.getId()));
-        }
+        UserAccount viewer = optionalAccount(username);
+        Post post = requireVisible(postId, viewer);
+        boolean liked = viewer != null && likes.existsById(new PostLikeId(post.getId(), viewer.getId()));
         return new PostApi.EngagementResponse(liked, likes.countByIdPostId(postId), comments.countByPostId(postId));
     }
 
     @Transactional
     public PostApi.LikeResponse toggleLike(String username, long postId) {
-        Post post = posts.findById(postId).orElseThrow(() -> ApiException.notFound("Post not found."));
         UserAccount account = accounts.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> ApiException.notFound("Account not found."));
+        Post post = requireVisible(postId, account);
         PostLikeId likeId = new PostLikeId(postId, account.getId());
         boolean liked;
         if (likes.existsById(likeId)) {
@@ -105,8 +105,8 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<PostApi.CommentResponse> comments(long postId, PageQuery query) {
-        if (!posts.existsById(postId)) throw ApiException.notFound("Post not found.");
+    public PageResponse<PostApi.CommentResponse> comments(long postId, String username, PageQuery query) {
+        requireVisible(postId, optionalAccount(username));
         var result = comments.findByPostIdOrderByCreatedAtAscIdAsc(postId,
                 PageRequest.of(query.pageNumber(), query.pageSize(), Sort.unsorted()));
         return PageResponse.of(result.getContent().stream().map(PostApi.CommentResponse::from).toList(),
@@ -115,9 +115,9 @@ public class PostService {
 
     @Transactional
     public PostApi.CommentResponse addComment(String username, long postId, PostApi.CommentRequest request) {
-        Post post = posts.findById(postId).orElseThrow(() -> ApiException.notFound("Post not found."));
         UserAccount author = accounts.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> ApiException.notFound("Account not found."));
+        Post post = requireVisible(postId, author);
         return PostApi.CommentResponse.from(comments.save(
                 new PostComment(post, author, request.content().trim())));
     }
@@ -141,5 +141,30 @@ public class PostService {
 
     private Post requireOwned(String username, long id) {
         return posts.findOwned(id, username).orElseThrow(() -> ApiException.notFound("Post not found."));
+    }
+
+    /**
+     * Loads a post the viewer may read or engage with. Connection-only posts are visible to the
+     * author and to accepted connections of the author; everyone else (including anonymous
+     * viewers) gets the same 404 as a missing post so existence is not revealed.
+     */
+    private Post requireVisible(long postId, UserAccount viewer) {
+        Post post = posts.findById(postId).orElseThrow(() -> ApiException.notFound("Post not found."));
+        if ("PUBLIC".equals(post.getAudience())) return post;
+        if (viewer == null) throw ApiException.notFound("Post not found.");
+        long authorId = post.getAuthor().getId();
+        long viewerId = viewer.getId();
+        if (authorId == viewerId) return post;
+        long low = Math.min(authorId, viewerId);
+        long high = Math.max(authorId, viewerId);
+        if (!connections.existsPair(low, high)) throw ApiException.notFound("Post not found.");
+        return post;
+    }
+
+    /** Null for anonymous callers; unknown usernames are a 404 like every other account lookup. */
+    private UserAccount optionalAccount(String username) {
+        if (username == null) return null;
+        return accounts.findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> ApiException.notFound("Account not found."));
     }
 }

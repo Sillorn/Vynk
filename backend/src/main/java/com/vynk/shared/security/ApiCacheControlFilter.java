@@ -14,10 +14,11 @@ public class ApiCacheControlFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        filterChain.doFilter(request, response);
+        // Set before the chain runs: once the response is committed, headers can no longer change.
         if (request.getRequestURI().startsWith("/api/")) {
             response.setHeader("Cache-Control", "no-store, max-age=0");
             response.setHeader("Pragma", "no-cache");
         }
+        filterChain.doFilter(request, response);
     }
 }

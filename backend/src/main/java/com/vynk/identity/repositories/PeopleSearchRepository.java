@@ -14,11 +14,11 @@ public interface PeopleSearchRepository extends JpaRepository<Profile, Long> {
             join p.userAccount u
             where u.status = com.vynk.identity.UserAccountStatus.ACTIVE
               and (:query = ''
-                or lower(p.firstName) like lower(concat('%', :query, '%'))
-                or lower(p.lastName) like lower(concat('%', :query, '%'))
-                or lower(p.headline) like lower(concat('%', :query, '%'))
+                or lower(p.firstName) like lower(concat('%', :query, '%')) escape '\\'
+                or lower(p.lastName) like lower(concat('%', :query, '%')) escape '\\'
+                or lower(p.headline) like lower(concat('%', :query, '%')) escape '\\'
                 or exists (select s.id from ProfileSkill s
-                           where s.profile = p and lower(s.name) like lower(concat('%', :query, '%'))))
+                           where s.profile = p and lower(s.name) like lower(concat('%', :query, '%')) escape '\\'))
             order by u.usernameLower asc, p.id asc
             """)
     Page<Profile> search(@Param("query") String query, Pageable pageable);

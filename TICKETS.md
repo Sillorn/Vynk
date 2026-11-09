@@ -401,3 +401,12 @@
 - **Type:** Story · **Priority:** P1 · **Relative size:** 5 points · **Decision:** CONFIRMED · **Status:** Done
 - **Depends on:** PN-027, PN-028, PN-029
 - **Acceptance criteria:** Posts have explicit Public or Connections audience selected in composer; public feed returns only Public posts; connections feed returns Public posts and posts by accepted connections with Connections audience; authors can see their own posts in either view; edits preserve audience; migration assigns existing posts Public; API and UI tests verify unauthorized users cannot read connection-only posts or engage with them
+
+## M4 — Messaging
+
+### PN-065 — Paginate conversation list and remove N+1 queries
+
+- **Type:** Story · **Priority:** P2 · **Relative size:** 5 points · **Decision:** PROPOSED · **Status:** Backlog
+- **Depends on:** PN-040, PN-042
+- **Acceptance criteria:** Conversation list API is paginated using the shared PageQuery/PageResponse contract; list is loaded without per-conversation N+1 queries; frontend inbox updated to page or load more and reviewed together with the frontend review findings; API and UI tests cover paging, unread counts and hidden conversations
+- **Note:** Found in the backend review. `GET /conversations` is unpaginated and issues N+1 queries. Schedule after the frontend review, since the response shape change affects the inbox UI.

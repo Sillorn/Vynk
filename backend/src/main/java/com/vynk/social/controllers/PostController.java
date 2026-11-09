@@ -41,16 +41,14 @@ public class PostController {
 
     @GetMapping("/{id}/engagement")
     public PostApi.EngagementResponse engagement(@PathVariable long id, Authentication authentication) {
-        String username = authentication == null || !authentication.isAuthenticated()
-                || "anonymousUser".equals(String.valueOf(authentication.getPrincipal()))
-                ? null : authentication.getName();
-        return service.engagement(id, username);
+        return service.engagement(id, optionalUsername(authentication));
     }
 
     @GetMapping("/{id}/comments")
     public PageResponse<PostApi.CommentResponse> comments(@PathVariable long id,
-                                                           @Valid @ModelAttribute PageQuery page) {
-        return service.comments(id, page);
+                                                           @Valid @ModelAttribute PageQuery page,
+                                                           Authentication authentication) {
+        return service.comments(id, optionalUsername(authentication), page);
     }
 
     @PostMapping("/{id}/comments")
@@ -96,6 +94,12 @@ public class PostController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable long id, Authentication authentication) {
         service.delete(requireUsername(authentication), id);
+    }
+
+    private static String optionalUsername(Authentication authentication) {
+        return authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(String.valueOf(authentication.getPrincipal()))
+                ? null : authentication.getName();
     }
 
     private static String requireUsername(Authentication authentication) {

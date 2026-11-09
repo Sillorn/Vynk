@@ -4,6 +4,7 @@ import com.vynk.identity.entities.Profile;
 import com.vynk.identity.entities.UserAccount;
 import com.vynk.identity.repositories.ProfileRepository;
 import com.vynk.identity.repositories.UserAccountRepository;
+import com.vynk.messaging.UserEventStream;
 import com.vynk.shared.api.ApiPaths;
 import com.vynk.shared.error.ApiErrorCode;
 import com.vynk.shared.error.ApiException;
@@ -26,6 +27,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -49,16 +52,22 @@ public class AuthController {
     private final UserAccountRepository userAccountRepository;
     private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SessionRegistry sessionRegistry;
+    private final UserEventStream eventStream;
     private final HttpSessionSecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     public AuthController(AuthenticationManager authenticationManager,
                           UserAccountRepository userAccountRepository,
                           ProfileRepository profileRepository,
-                          PasswordEncoder passwordEncoder) {
+                          PasswordEncoder passwordEncoder,
+                          SessionRegistry sessionRegistry,
+                          UserEventStream eventStream) {
         this.authenticationManager = authenticationManager;
         this.userAccountRepository = userAccountRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
+        this.sessionRegistry = sessionRegistry;
+        this.eventStream = eventStream;
     }
 
     @GetMapping("/csrf")
@@ -80,11 +89,7 @@ public class AuthController {
             log.warn("Bad credentials for username '{}'.", username);
             throw new ApiException(ApiErrorCode.UNAUTHENTICATED, "Username or password incorrect");
         }
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-        securityContextRepository.saveContext(context, httpRequest, httpResponse);
-        httpRequest.getSession(true);
+        establishSession(authentication, httpRequest, httpResponse, true);
         return ResponseEntity.ok(Map.of("username", authentication.getName()));
     }
 
@@ -118,10 +123,7 @@ public class AuthController {
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(username, request.password()));
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-        securityContextRepository.saveContext(context, httpRequest, httpResponse);
+        establishSession(authentication, httpRequest, httpResponse, true);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("username", username));
     }
@@ -142,15 +144,20 @@ public class AuthController {
         if (!passwordEncoder.matches(request.currentPassword(), account.getPasswordHash())) {
             throw new ApiException(ApiErrorCode.FORBIDDEN, "Current password is incorrect.");
         }
+        if (request.currentPassword().equals(request.newPassword())) {
+            throw ApiException.validationFailed("The new password must be different from the current password.");
+        }
         account.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userAccountRepository.save(account);
 
         Authentication newAuth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(username, request.newPassword()));
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(newAuth);
-        SecurityContextHolder.setContext(context);
-        securityContextRepository.saveContext(context, httpRequest, httpResponse);
+        // Keep this browser signed in (same session id so its event stream survives) but end every
+        // other session: whoever held the old password must not stay signed in.
+        establishSession(newAuth, httpRequest, httpResponse, false);
+        String currentSessionId = httpRequest.getSession().getId();
+        expireSessions(newAuth.getPrincipal(), currentSessionId);
+        eventStream.closeUserExceptSession(username, currentSessionId);
         return ResponseEntity.ok(Map.of("status", "updated"));
     }
 
@@ -168,6 +175,8 @@ public class AuthController {
         profileRepository.findByUserAccountUsernameIgnoreCase(username)
                 .ifPresent(profileRepository::delete);
         userAccountRepository.delete(account);
+        expireSessions(authentication.getPrincipal(), null);
+        eventStream.closeUserExceptSession(username, null);
         SecurityContextHolder.clearContext();
         HttpSession session = httpRequest.getSession(false);
         if (session != null) {
@@ -183,6 +192,34 @@ public class AuthController {
             throw new ApiException(ApiErrorCode.UNAUTHENTICATED, "Authentication required.");
         }
         return ResponseEntity.ok(Map.of("username", authentication.getName()));
+    }
+
+    /**
+     * Stores the authentication in the HTTP session and registers the session so it can later be
+     * expired remotely. On sign-in the session id is rotated to prevent session fixation, and any
+     * event stream opened by the previous session is closed.
+     */
+    private void establishSession(Authentication authentication, HttpServletRequest request,
+                                  HttpServletResponse response, boolean rotateSessionId) {
+        HttpSession existing = request.getSession(false);
+        if (rotateSessionId && existing != null) {
+            eventStream.closeSession(existing.getId());
+            request.changeSessionId();
+        }
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+        securityContextRepository.saveContext(context, request, response);
+        sessionRegistry.registerNewSession(request.getSession(true).getId(), authentication.getPrincipal());
+    }
+
+    /** Marks all of the principal's sessions expired except {@code keepSessionId} (may be null). */
+    private void expireSessions(Object principal, String keepSessionId) {
+        for (SessionInformation info : sessionRegistry.getAllSessions(principal, false)) {
+            if (!info.getSessionId().equals(keepSessionId)) {
+                info.expireNow();
+            }
+        }
     }
 
     public record LoginRequest(

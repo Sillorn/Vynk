@@ -25,6 +25,7 @@ class SocialNetworkIntegrationTest {
     private static final String PASSWORD = "social-test-password";
     @Autowired private MockMvc mvc;
     private final ObjectMapper mapper = new ObjectMapper();
+    private final java.util.concurrent.atomic.AtomicInteger clientSequence = new java.util.concurrent.atomic.AtomicInteger();
 
     @Test
     void protectsPostAndCommentOwnershipAndRequiresAcceptedConnectionForConnectionsFeed() throws Exception {
@@ -81,6 +82,82 @@ class SocialNetworkIntegrationTest {
     }
 
     @Test
+    void connectionsOnlyPostsAreHiddenFromNonConnectionsForEveryEngagementEndpoint() throws Exception {
+        MockHttpSession owner = register("visowner", "Olive", "Owner");
+        MockHttpSession friend = register("visfriend", "Frank", "Friend");
+        MockHttpSession stranger = register("visstranger", "Sam", "Stranger");
+        long postId = createPost(owner, "connections-only post", "CONNECTIONS");
+        String comment = "{\"content\":\"hello\"}";
+
+        // Anonymous and unconnected users get the same 404 as a missing post.
+        mvc.perform(get("/api/v1/posts/" + postId + "/engagement")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/posts/" + postId + "/comments")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/posts/" + postId + "/engagement").session(stranger)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/posts/" + postId + "/comments").session(stranger)).andExpect(status().isNotFound());
+        mvc.perform(post("/api/v1/posts/" + postId + "/likes").session(stranger).with(csrf())).andExpect(status().isNotFound());
+        mvc.perform(post("/api/v1/posts/" + postId + "/comments").session(stranger).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(comment)).andExpect(status().isNotFound());
+
+        // The author always has access.
+        mvc.perform(post("/api/v1/posts/" + postId + "/likes").session(owner).with(csrf()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.liked").value(true));
+
+        // A pending request does not grant access.
+        mvc.perform(post("/api/v1/connections/visfriend/requests").session(owner).with(csrf())).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/posts/" + postId + "/engagement").session(friend)).andExpect(status().isNotFound());
+        mvc.perform(post("/api/v1/posts/" + postId + "/likes").session(friend).with(csrf())).andExpect(status().isNotFound());
+
+        // Accepted connections can read and engage.
+        MvcResult incoming = mvc.perform(get("/api/v1/connections/requests/incoming").session(friend))
+                .andExpect(status().isOk()).andReturn();
+        long requestId = mapper.readTree(incoming.getResponse().getContentAsString()).get(0).get("id").asLong();
+        mvc.perform(post("/api/v1/connections/requests/" + requestId + "/accept").session(friend).with(csrf()))
+                .andExpect(status().isOk());
+        mvc.perform(post("/api/v1/posts/" + postId + "/likes").session(friend).with(csrf()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.likeCount").value(2));
+        mvc.perform(post("/api/v1/posts/" + postId + "/comments").session(friend).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(comment))
+                .andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/posts/" + postId + "/comments").session(friend))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
+        mvc.perform(get("/api/v1/posts/" + postId + "/engagement").session(friend))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.liked").value(true))
+                .andExpect(jsonPath("$.commentCount").value(1));
+
+        // Still hidden from the stranger and anonymous visitors after the connection exists.
+        mvc.perform(get("/api/v1/posts/" + postId + "/comments")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/posts/" + postId + "/engagement").session(stranger)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void connectionRequestsCannotBePendingInBothDirections() throws Exception {
+        MockHttpSession alice = register("dirone", "Dir", "One");
+        MockHttpSession bob = register("dirtwo", "Dir", "Two");
+
+        mvc.perform(post("/api/v1/connections/dirtwo/requests").session(alice).with(csrf())).andExpect(status().isOk());
+        MvcResult outgoing = mvc.perform(get("/api/v1/connections/requests/outgoing").session(alice))
+                .andExpect(status().isOk()).andReturn();
+        long firstRequest = mapper.readTree(outgoing.getResponse().getContentAsString()).get(0).get("id").asLong();
+        mvc.perform(delete("/api/v1/connections/requests/" + firstRequest).session(alice).with(csrf()))
+                .andExpect(status().isOk());
+
+        // Bob now asks Alice. Alice's earlier (cancelled) request must not be revived on top of it.
+        mvc.perform(post("/api/v1/connections/dirone/requests").session(bob).with(csrf())).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/connections/dirtwo/requests").session(alice).with(csrf()))
+                .andExpect(status().isConflict());
+        mvc.perform(get("/api/v1/connections/requests/outgoing").session(alice))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+
+        MvcResult incoming = mvc.perform(get("/api/v1/connections/requests/incoming").session(alice))
+                .andExpect(status().isOk()).andReturn();
+        long bobsRequest = mapper.readTree(incoming.getResponse().getContentAsString()).get(0).get("id").asLong();
+        mvc.perform(post("/api/v1/connections/requests/" + bobsRequest + "/accept").session(alice).with(csrf()))
+                .andExpect(status().isOk());
+        mvc.perform(post("/api/v1/connections/requests/" + bobsRequest + "/accept").session(alice).with(csrf()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void messagingSupportsTwoUsersAndRecoveryWhileDenyingThirdPartyAccess() throws Exception {
         MockHttpSession alice = register("messagealice", "Alice", "Sender");
         MockHttpSession bob = register("messagebob", "Bob", "Recipient");
@@ -122,14 +199,23 @@ class SocialNetworkIntegrationTest {
     }
 
     private long createPost(MockHttpSession session, String content) throws Exception {
+        return createPost(session, content, "PUBLIC");
+    }
+
+    private long createPost(MockHttpSession session, String content, String audience) throws Exception {
         MvcResult result = mvc.perform(post("/api/v1/posts").session(session).with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(java.util.Map.of("content", content))))
+                        .contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(
+                                java.util.Map.of("content", content, "audience", audience))))
                 .andExpect(status().isCreated()).andReturn();
         return mapper.readTree(result.getResponse().getContentAsString()).get("id").asLong();
     }
 
     private MockHttpSession register(String username, String first, String last) throws Exception {
-        MvcResult result = mvc.perform(post("/api/v1/auth/register").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+        // Each simulated user comes from its own address so the auth throttle (per client) is not shared.
+        String clientAddress = "198.51.100." + clientSequence.incrementAndGet();
+        MvcResult result = mvc.perform(post("/api/v1/auth/register").with(csrf())
+                        .with(request -> { request.setRemoteAddr(clientAddress); return request; })
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(new AuthController.RegisterRequest(username, PASSWORD, first, last,
                                 "Professional", "Social integration test"))))
                 .andExpect(status().isCreated()).andReturn();

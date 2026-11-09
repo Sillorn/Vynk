@@ -10,10 +10,13 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
@@ -26,7 +29,7 @@ import org.springframework.security.web.header.writers.XXssProtectionHeaderWrite
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, SessionRegistry sessionRegistry) throws Exception {
         CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         // Angular expects XSRF-TOKEN cookie; default name is XSRF-TOKEN and header X-XSRF-TOKEN
         csrfTokenRepository.setCookiePath("/");
@@ -46,7 +49,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionFixation().migrateSession()
-                        .maximumSessions(1))
+                        // Sessions are registered by AuthController at login. The registry lets a
+                        // password change or account deletion expire the user's other sessions;
+                        // an expired session is answered with 401 on its next request.
+                        .maximumSessions(1)
+                        .sessionRegistry(sessionRegistry)
+                        .expiredSessionStrategy(event ->
+                                event.getResponse().setStatus(HttpServletResponse.SC_UNAUTHORIZED)))
                 .securityContext(securityContext -> securityContext
                         .requireExplicitSave(false))
                 .headers(headers -> headers
@@ -79,9 +88,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                         })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                        }))
+                        .accessDeniedHandler(new ApiAccessDeniedHandler()))
                 .logout(logout -> logout
                         .logoutUrl("/api/v1/auth/logout")
                         .deleteCookies("JSESSIONID", "XSRF-TOKEN")
@@ -90,6 +97,17 @@ public class SecurityConfig {
                         .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler()));
 
         return http.build();
+    }
+
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    /** Forwards servlet session lifecycle events so the registry and SSE streams are cleaned up. */
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
     }
 
     @Bean

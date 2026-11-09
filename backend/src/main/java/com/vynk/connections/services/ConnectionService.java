@@ -16,6 +16,8 @@ import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 public class ConnectionService {
@@ -66,6 +68,11 @@ public class ConnectionService {
         if (from.getId().equals(to.getId())) throw ApiException.badRequest("You cannot connect to yourself.");
         long low = Math.min(from.getId(), to.getId()), high = Math.max(from.getId(), to.getId());
         if (accepted.existsById(new AcceptedConnection.Key(low, high))) throw ApiException.conflict("Already connected.");
+        // A pending request from the other person must be accepted, not mirrored. Check it before
+        // reviving any earlier outgoing request so both directions can never be pending at once.
+        var incoming = requests.findBySenderUsernameIgnoreCaseAndRecipientUsernameIgnoreCase(target, actor);
+        if (incoming.isPresent() && incoming.get().getStatus() == ConnectionRequestStatus.PENDING)
+            throw ApiException.conflict("This person has already requested to connect.");
         var outgoing = requests.findBySenderUsernameIgnoreCaseAndRecipientUsernameIgnoreCase(actor, target);
         if (outgoing.isPresent()) {
             if (outgoing.get().getStatus() == ConnectionRequestStatus.PENDING)
@@ -73,9 +80,6 @@ public class ConnectionService {
             outgoing.get().setStatus(ConnectionRequestStatus.PENDING);
             return;
         }
-        var incoming = requests.findBySenderUsernameIgnoreCaseAndRecipientUsernameIgnoreCase(target, actor);
-        if (incoming.isPresent() && incoming.get().getStatus() == ConnectionRequestStatus.PENDING)
-            throw ApiException.conflict("This person has already requested to connect.");
         try {
             requests.save(new ConnectionRequest(from, to));
         } catch (DataIntegrityViolationException ex) {
@@ -96,12 +100,21 @@ public class ConnectionService {
         if (request.getStatus() != ConnectionRequestStatus.PENDING) throw ApiException.conflict("Request is no longer pending.");
         long low = Math.min(request.getSender().getId(), request.getRecipient().getId());
         long high = Math.max(request.getSender().getId(), request.getRecipient().getId());
+        // save() on an assigned composite key would silently merge an existing row, so check first.
+        if (accepted.existsById(new AcceptedConnection.Key(low, high)))
+            throw ApiException.conflict("These users are already connected.");
         try {
-            accepted.save(new AcceptedConnection(low, high));
+            accepted.saveAndFlush(new AcceptedConnection(low, high));
             request.setStatus(ConnectionRequestStatus.ACCEPTED);
             notifications.save(new Notification(request.getSender(), "CONNECTION_ACCEPTED",
                     request.getRecipient().getUsername()));
-            eventStream.publish(request.getSender().getUsername(), "notification");
+            String senderUsername = request.getSender().getUsername();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    eventStream.publish(senderUsername, "notification");
+                }
+            });
         } catch (DataIntegrityViolationException ex) {
             throw ApiException.conflict("These users are already connected.");
         }

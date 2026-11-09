@@ -19,6 +19,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -133,7 +134,8 @@ class AuthSessionTest {
     @Test
     void stateChangingRequestWithoutCsrfIsRejected() throws Exception {
         mockMvc.perform(post("/api/v1/auth/logout"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
 
         UserAccount user = new UserAccount("csrfuser", passwordEncoder.encode("password123"));
         userAccountRepository.save(user);
@@ -143,6 +145,64 @@ class AuthSessionTest {
                 .andExpect(status().isOk()).andReturn();
         mockMvc.perform(post("/api/v1/auth/logout")
                         .session((org.springframework.mock.web.MockHttpSession) login.getRequest().getSession(false)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
+    }
+
+    private org.springframework.mock.web.MockHttpSession login(String username, String password) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
+                .andExpect(status().isOk()).andReturn();
+        return (org.springframework.mock.web.MockHttpSession) result.getRequest().getSession(false);
+    }
+
+    private org.springframework.mock.web.MockHttpSession register(String username, String password) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/register").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AuthController.RegisterRequest(
+                                username, password, "Test", "User", "Engineer", "Summary"))))
+                .andExpect(status().isCreated()).andReturn();
+        return (org.springframework.mock.web.MockHttpSession) result.getRequest().getSession(false);
+    }
+
+    @Test
+    void passwordChangeEndsOtherSessionsButKeepsTheCurrentOne() throws Exception {
+        var otherDevice = register("dave", "initial-password");
+        var thisDevice = login("dave", "initial-password");
+        mockMvc.perform(get("/api/v1/auth/me").session(otherDevice)).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/auth/password").session(thisDevice).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"initial-password\",\"newPassword\":\"initial-password\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/auth/me").session(otherDevice)).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/auth/password").session(thisDevice).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"initial-password\",\"newPassword\":\"replacement-password\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/auth/me").session(thisDevice)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/auth/me").session(otherDevice)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void accountDeletionEndsEverySession() throws Exception {
+        var first = register("erin", "initial-password");
+        var second = login("erin", "initial-password");
+        mockMvc.perform(delete("/api/v1/auth/account").session(second).with(csrf()))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/v1/auth/me").session(first)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void signingInRotatesAnExistingSessionId() throws Exception {
+        register("frank", "initial-password");
+        var existing = new org.springframework.mock.web.MockHttpSession();
+        String before = existing.getId();
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login").session(existing).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"frank\",\"password\":\"initial-password\"}"))
+                .andExpect(status().isOk()).andReturn();
+        assertThat(result.getRequest().getSession(false).getId()).isNotEqualTo(before);
     }
 }

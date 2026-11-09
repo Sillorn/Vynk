@@ -26,6 +26,8 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
 
     static final int MAX_ATTEMPTS = 10;
     static final Duration WINDOW = Duration.ofMinutes(5);
+    /** Above this many tracked clients, expired windows are purged so the map stays bounded. */
+    static final int PURGE_THRESHOLD = 10_000;
 
     private final Map<String, Attempts> attempts = new ConcurrentHashMap<>();
 
@@ -35,12 +37,17 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
             return true;
         }
         String path = request.getRequestURI();
-        return !("/api/v1/auth/login".equals(path) || "/api/v1/auth/register".equals(path));
+        return !("/api/v1/auth/login".equals(path)
+                || "/api/v1/auth/register".equals(path)
+                || "/api/v1/auth/password".equals(path));
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        if (attempts.size() > PURGE_THRESHOLD) {
+            attempts.values().removeIf(Attempts::isExpired);
+        }
         String key = request.getRemoteAddr() + ":" + request.getRequestURI();
         Attempts entry = attempts.computeIfAbsent(key, ignored -> new Attempts());
         if (entry.isLimited()) {
@@ -58,6 +65,10 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     private static final class Attempts {
         private final AtomicInteger count = new AtomicInteger();
         private volatile Instant windowStart = Instant.now();
+
+        boolean isExpired() {
+            return Instant.now().isAfter(windowStart.plus(WINDOW));
+        }
 
         boolean isLimited() {
             Instant now = Instant.now();
