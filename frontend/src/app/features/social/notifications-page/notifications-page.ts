@@ -2,8 +2,10 @@ import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { describeHttpError } from '../../../shared/http-error';
 import { AuthService } from '../../../core/auth/auth.service';
 import { EventStreamService } from '../../../core/social/event-stream.service';
+import { UnreadService } from '../../../core/social/unread.service';
 import { NotificationItem, NotificationService } from '../../../core/social/notification.service';
 
 @Component({
@@ -118,6 +120,7 @@ export class NotificationsPage {
   protected readonly auth = inject(AuthService);
   private readonly service = inject(NotificationService);
   private readonly events = inject(EventStreamService);
+  private readonly unread = inject(UnreadService);
   protected readonly items = signal<readonly NotificationItem[]>([]);
   protected readonly loading = signal(false);
   protected readonly loadingMore = signal(false);
@@ -130,7 +133,12 @@ export class NotificationsPage {
     effect((onCleanup) => {
       if (this.auth.user()) {
         this.reload();
-        onCleanup(this.events.connect(() => this.reload()));
+        onCleanup(
+          this.events.connect(
+            () => this.reload(),
+            () => this.reload(),
+          ),
+        );
       } else {
         this.items.set([]);
       }
@@ -184,27 +192,31 @@ export class NotificationsPage {
     if (this.pending().has(item.id)) return;
     this.pending.update((ids) => new Set(ids).add(item.id));
     this.service.markRead(item.id).subscribe({
-      next: () =>
+      next: () => {
         this.items.update((items) =>
           items.map((current) =>
             current.id === item.id ? { ...current, readAt: new Date().toISOString() } : current,
           ),
-        ),
-      error: (err) => this.fail(err),
-      complete: () =>
-        this.pending.update((ids) => {
-          const next = new Set(ids);
-          next.delete(item.id);
-          return next;
-        }),
+        );
+        this.unread.refreshNotifications();
+      },
+      error: (err) => {
+        this.fail(err);
+        this.clearPending(item.id);
+      },
+      complete: () => this.clearPending(item.id),
+    });
+  }
+
+  private clearPending(id: number): void {
+    this.pending.update((ids) => {
+      const next = new Set(ids);
+      next.delete(id);
+      return next;
     });
   }
 
   private fail(err: HttpErrorResponse): void {
-    this.error.set(
-      err.status === 0
-        ? 'Unable to reach the service. Try again.'
-        : (err.error?.detail ?? 'Unable to load notifications.'),
-    );
+    this.error.set(describeHttpError(err, 'Unable to load notifications.'));
   }
 }

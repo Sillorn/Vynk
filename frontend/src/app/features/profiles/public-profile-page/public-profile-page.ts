@@ -22,6 +22,7 @@ import {
   switchMap,
   timeout,
 } from 'rxjs';
+import { describeHttpError } from '../../../shared/http-error';
 import { PublicProfile } from '../../../core/profiles/profile.models';
 import { ProfileService } from '../../../core/profiles/profile.service';
 import { InitialsAvatar } from '../../../shared/initials-avatar/initials-avatar';
@@ -65,6 +66,7 @@ export class PublicProfilePage {
   protected readonly connected = signal(false);
   protected readonly connectionBusy = signal(false);
   protected readonly invitationSent = signal(false);
+  protected readonly connectionError = signal<string | null>(null);
 
   protected readonly hasSidebar = computed(() => {
     const profile = this.profile();
@@ -105,12 +107,16 @@ export class PublicProfilePage {
         this.profile.set(result.profile);
         this.connected.set(false);
         this.invitationSent.set(false);
+        this.connectionError.set(null);
         if (
           result.profile &&
           this.auth.user() &&
           this.auth.user()?.username.toLowerCase() !== result.profile.username.toLowerCase()
         ) {
+          const failed = () =>
+            this.connectionError.set('Your connection status could not be loaded.');
           this.connections.isConnected(result.profile.username).subscribe({
+            error: failed,
             next: (connected) => {
               this.connected.set(connected);
               if (!connected) {
@@ -122,6 +128,7 @@ export class PublicProfilePage {
                           request.username.toLowerCase() === result.profile?.username.toLowerCase(),
                       ),
                     ),
+                  error: failed,
                 });
               }
             },
@@ -138,13 +145,22 @@ export class PublicProfilePage {
   protected connect(username: string): void {
     if (this.connectionBusy() || this.connected()) return;
     this.connectionBusy.set(true);
+    this.connectionError.set(null);
     this.connections.send(username).subscribe({
       next: () => {
         this.invitationSent.set(true);
         this.connectionBusy.set(false);
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         this.connectionBusy.set(false);
+        const detail = err.error?.detail;
+        this.connectionError.set(
+          err.status === 0
+            ? 'The server could not be reached. Try again.'
+            : typeof detail === 'string' && detail.trim()
+              ? detail
+              : 'The invitation could not be sent.',
+        );
       },
     });
   }
@@ -213,12 +229,5 @@ function describeError(error: HttpErrorResponse): string {
   if (error.status === 404) {
     return 'No profile matches that username. Check the spelling or browse the people directory.';
   }
-  if (error.status === 0) {
-    return 'The server could not be reached. Check your connection and try again.';
-  }
-  const detail = error.error?.detail;
-  if (typeof detail === 'string' && detail.trim().length > 0) {
-    return detail;
-  }
-  return 'This profile could not be loaded right now. Please try again.';
+  return describeHttpError(error, 'This profile could not be loaded right now. Please try again.');
 }

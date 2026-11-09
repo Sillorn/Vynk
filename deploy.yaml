@@ -30,7 +30,7 @@ commands:
     isolation: chroot
     rootfs:
       distro: alpine
-      version: "3.21.3"      # must be a full point release
+      version: "3.24.4"      # must be a full point release
 
 services:
   - name: vynk

@@ -6,7 +6,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { AuthService } from '../../../core/auth/auth.service';
 import { EventStreamService } from '../../../core/social/event-stream.service';
 import { ConnectionService } from '../../../core/social/connection.service';
-import { ProfileService } from '../../../core/profiles/profile.service';
+import { UnreadService } from '../../../core/social/unread.service';
+import { DisplayNameService } from '../../../core/profiles/display-name.service';
+import { describeHttpError } from '../../../shared/http-error';
 import {
   ConversationMessage,
   InboxItem,
@@ -82,6 +84,11 @@ import {
                     >&#64;{{ selected()?.participantUsername }}</span
                   >
                 </h2>
+                @if (selected()?.conversationId) {
+                  <button mat-button type="button" (click)="hideSelected()">
+                    Hide conversation
+                  </button>
+                }
               </header>
               @if (loadingMessages()) {
                 <p role="status">Loading messages…</p>
@@ -323,7 +330,7 @@ import {
         color: var(--mat-sys-on-surface-variant);
       }
       .error {
-        color: #a52222;
+        color: var(--mat-sys-error);
       }
       .visually-hidden {
         position: absolute;
@@ -354,10 +361,9 @@ export class MessagesPage {
   protected readonly auth = inject(AuthService);
   private readonly service = inject(MessagingService);
   private readonly connectionService = inject(ConnectionService);
-  private readonly profileService = inject(ProfileService);
-  private readonly names = signal<Record<string, string>>({});
+  private readonly displayNames = inject(DisplayNameService);
   protected displayName(username: string): string {
-    return this.names()[username] ?? username;
+    return this.displayNames.name(username);
   }
   protected readonly contacts = signal<readonly string[]>([]);
   protected readonly availableContacts = () => {
@@ -365,6 +371,7 @@ export class MessagesPage {
     return this.contacts().filter((contact) => !conversations.has(contact));
   };
   private readonly eventStream = inject(EventStreamService);
+  private readonly unread = inject(UnreadService);
   protected readonly inbox = signal<readonly InboxItem[]>([]);
   protected readonly selected = signal<InboxItem | null>(null);
   protected readonly messages = signal<readonly ConversationMessage[]>([]);
@@ -376,6 +383,9 @@ export class MessagesPage {
   protected readonly historyError = signal<string | null>(null);
   protected draft = '';
   private page = 0;
+  private historySeq = 0;
+  private inboxSeq = 0;
+  private pendingSend: { username: string; body: string; id: string } | null = null;
 
   constructor() {
     effect((onCleanup) => {
@@ -384,43 +394,37 @@ export class MessagesPage {
         this.connectionService.contacts().subscribe({
           next: (contacts) => {
             this.contacts.set(contacts);
-            contacts.forEach((username) => this.loadName(username));
+            contacts.forEach((username) => this.displayNames.load(username));
           },
         });
-        const disconnect = this.eventStream.connect(() => {
-          // The SSE payload is only a hint; reconcile current state from REST.
+        // The SSE payload is only a hint; reconcile current state from REST. The same
+        // reconciliation runs after a reconnect to recover events missed while offline.
+        const reconcile = () => {
           this.reload();
-          if (this.selected()) {
+          if (this.selected()?.conversationId) {
             this.page = 0;
             this.fetchMessages(false);
           }
-        });
+        };
+        const disconnect = this.eventStream.connect(reconcile, reconcile);
         onCleanup(disconnect);
       }
-    });
-  }
-
-  private loadName(username: string): void {
-    if (!username || this.names()[username]) return;
-    this.profileService.getPublicProfile(username).subscribe({
-      next: (profile) =>
-        this.names.update((names) => ({
-          ...names,
-          [username]: `${profile.firstName} ${profile.lastName}`.trim() || username,
-        })),
     });
   }
 
   protected reload(): void {
     this.error.set(null);
     this.loadingInbox.set(true);
+    const seq = ++this.inboxSeq;
     this.service.inbox().subscribe({
       next: (items) => {
+        if (seq !== this.inboxSeq) return;
         this.inbox.set(items);
-        items.forEach((item) => this.loadName(item.participantUsername));
+        items.forEach((item) => this.displayNames.load(item.participantUsername));
         this.loadingInbox.set(false);
       },
       error: (err) => {
+        if (seq !== this.inboxSeq) return;
         this.fail(err);
         this.loadingInbox.set(false);
       },
@@ -444,6 +448,10 @@ export class MessagesPage {
     this.messages.set([]);
     this.page = 0;
     this.hasOlder.set(false);
+    // Drop any in-flight history response for the previously selected conversation.
+    this.historySeq++;
+    this.loadingMessages.set(false);
+    this.historyError.set(null);
   }
 
   protected open(item: InboxItem): void {
@@ -472,8 +480,12 @@ export class MessagesPage {
         this.inbox.update((rows) =>
           rows.filter((row) => row.conversationId !== item.conversationId),
         );
-        this.selected.set(null);
-        this.messages.set([]);
+        if (this.selected()?.conversationId === item.conversationId) {
+          this.historySeq++;
+          this.loadingMessages.set(false);
+          this.selected.set(null);
+          this.messages.set([]);
+        }
       },
       error: (err) => this.fail(err),
     });
@@ -485,21 +497,24 @@ export class MessagesPage {
     if (!item || !body || this.sending()) return;
     this.sending.set(true);
     this.error.set(null);
-    this.service.send(item.participantUsername, body).subscribe({
+    if (this.pendingSend?.username !== item.participantUsername || this.pendingSend.body !== body) {
+      this.pendingSend = { username: item.participantUsername, body, id: crypto.randomUUID() };
+    }
+    this.service.send(item.participantUsername, body, this.pendingSend.id).subscribe({
       next: (message) => {
-        const item: InboxItem = {
-          conversationId: message.conversationId,
-          participantId: 0,
-          participantUsername:
-            message.senderUsername === this.auth.user()?.username
-              ? (this.selected()?.participantUsername ?? '')
-              : message.senderUsername,
-          latestMessage: message,
-          unreadCount: 0,
-        };
-        this.selected.set(item);
-        this.messages.update((current) => [message, ...current]);
-        this.draft = '';
+        this.pendingSend = null;
+        // Only update the open conversation if the user is still looking at the recipient.
+        if (this.selected()?.participantUsername === item.participantUsername) {
+          this.selected.set({
+            conversationId: message.conversationId,
+            participantId: item.participantId,
+            participantUsername: item.participantUsername,
+            latestMessage: message,
+            unreadCount: 0,
+          });
+          this.messages.update((current) => [message, ...current]);
+        }
+        if (this.draft.trim() === body) this.draft = '';
         this.sending.set(false);
         this.reload();
       },
@@ -513,6 +528,7 @@ export class MessagesPage {
   private fetchMessages(older: boolean): void {
     const item = this.selected();
     if (!item) return;
+    const seq = ++this.historySeq;
     this.loadingMessages.set(true);
     this.historyError.set(null);
     if (!item.conversationId) {
@@ -521,9 +537,11 @@ export class MessagesPage {
     }
     this.service.history(item.conversationId, this.page).subscribe({
       next: (response) => {
+        // Ignore responses for a conversation/page request that has since been superseded.
+        if (seq !== this.historySeq) return;
         response.items.forEach((message) => {
           if (message.senderUsername !== this.auth.user()?.username)
-            this.loadName(message.senderUsername);
+            this.displayNames.load(message.senderUsername);
         });
         this.messages.update((current) => {
           const combined = older
@@ -536,15 +554,18 @@ export class MessagesPage {
         this.hasOlder.set(response.hasNext);
         this.loadingMessages.set(false);
         this.service.markRead(item.conversationId).subscribe({
-          next: () =>
+          next: () => {
             this.inbox.update((rows) =>
               rows.map((row) =>
                 row.conversationId === item.conversationId ? { ...row, unreadCount: 0 } : row,
               ),
-            ),
+            );
+            this.unread.refreshMessages();
+          },
         });
       },
       error: (err) => {
+        if (seq !== this.historySeq) return;
         this.historyError.set(
           err.status === 0
             ? 'Unable to reach the service. Try again.'
@@ -556,10 +577,6 @@ export class MessagesPage {
   }
 
   private fail(err: HttpErrorResponse): void {
-    this.error.set(
-      err.status === 0
-        ? 'Unable to reach the service. Try again.'
-        : (err.error?.detail ?? 'Unable to load messages.'),
-    );
+    this.error.set(describeHttpError(err, 'Unable to load messages.'));
   }
 }

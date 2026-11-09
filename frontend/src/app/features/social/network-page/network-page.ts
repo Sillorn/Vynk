@@ -4,8 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
+import { describeHttpError } from '../../../shared/http-error';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ConnectionRequest, ConnectionService } from '../../../core/social/connection.service';
+import { UnreadService } from '../../../core/social/unread.service';
 
 @Component({
   selector: 'app-network-page',
@@ -93,7 +95,7 @@ import { ConnectionRequest, ConnectionService } from '../../../core/social/conne
               @for (request of incoming(); track request.id) {
                 <article>
                   <div>
-                    <a [href]="'/profile/' + request.username">{{ request.username }}</a
+                    <a [routerLink]="['/profile', request.username]">{{ request.username }}</a
                     ><time>{{ request.createdAt | date: 'mediumDate' }}</time>
                   </div>
                   <button mat-flat-button (click)="accept(request)">Accept</button
@@ -110,7 +112,7 @@ import { ConnectionRequest, ConnectionService } from '../../../core/social/conne
               @for (request of outgoing(); track request.id) {
                 <article>
                   <div>
-                    <a [href]="'/profile/' + request.username">{{ request.username }}</a
+                    <a [routerLink]="['/profile', request.username]">{{ request.username }}</a
                     ><time>{{ request.createdAt | date: 'mediumDate' }}</time>
                   </div>
                   <button mat-button (click)="cancel(request)">Cancel</button>
@@ -228,7 +230,7 @@ import { ConnectionRequest, ConnectionService } from '../../../core/social/conne
         font-size: 0.9rem;
       }
       .error {
-        color: #a52222;
+        color: var(--mat-sys-error);
       }
       @media (max-width: 540px) {
         .invite div {
@@ -244,6 +246,7 @@ import { ConnectionRequest, ConnectionService } from '../../../core/social/conne
 export class NetworkPage {
   protected readonly auth = inject(AuthService);
   private readonly service = inject(ConnectionService);
+  private readonly unread = inject(UnreadService);
   protected readonly incoming = signal<readonly ConnectionRequest[]>([]);
   protected readonly contacts = signal<readonly string[]>([]);
   protected readonly tab = signal<'contacts' | 'invitations'>('contacts');
@@ -324,6 +327,7 @@ export class NetworkPage {
         after?.();
         this.message.set('Invitation updated.');
         this.load();
+        this.unread.refreshInvitations();
       },
       error: (err) => {
         this.fail(err);
@@ -332,10 +336,6 @@ export class NetworkPage {
     });
   }
   private fail(err: HttpErrorResponse): void {
-    this.error.set(
-      err.status === 0
-        ? 'Unable to reach the service. Try again.'
-        : (err.error?.detail ?? 'Unable to update your network.'),
-    );
+    this.error.set(describeHttpError(err, 'Unable to update your network.'));
   }
 }

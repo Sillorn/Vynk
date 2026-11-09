@@ -44,10 +44,11 @@ export class MessagingService {
     });
   }
 
-  send(username: string, body: string) {
+  /** The same clientRequestId must be reused when retrying a failed send. */
+  send(username: string, body: string, clientRequestId: string) {
     return this.http.post<ConversationMessage>(
       `${this.endpoint}/with/${encodeURIComponent(username)}/messages`,
-      { body, clientRequestId: crypto.randomUUID() },
+      { body, clientRequestId },
       { withCredentials: true },
     );
   }

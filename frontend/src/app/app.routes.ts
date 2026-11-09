@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { unsavedChangesGuard } from './core/unsaved-changes.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'feed' },
@@ -60,6 +61,7 @@ export const routes: Routes = [
   {
     path: 'profile/edit',
     canActivate: [authGuard],
+    canDeactivate: [unsavedChangesGuard],
     title: 'Edit profile',
     loadComponent: () =>
       import('./features/profiles/profile-editor/profile-editor').then((m) => m.ProfileEditor),

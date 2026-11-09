@@ -195,16 +195,35 @@
   height: 100%;
 }
 
-.mobile-nav mat-nav-list {
-  padding-top: 0.5rem;
+.mobile-nav__list {
+  display: grid;
+  padding: 0.5rem 0.5rem 0;
 }
 
-.mobile-nav mat-nav-list svg {
+.mobile-nav__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 3.5rem;
+  padding: 0 1rem;
+  border-radius: 2rem;
+  color: inherit;
+  font: var(--mat-sys-label-large);
+  text-decoration: none;
+}
+
+.mobile-nav__item svg {
+  width: 1.5rem;
+  height: 1.5rem;
   fill: currentColor;
 }
 
-.mobile-nav a[mat-list-item] {
-  position: relative;
+.mobile-nav__divider {
+  width: 100%;
+  margin: 0.5rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--mat-sys-outline-variant);
 }
 
 .mobile-nav .nav-item--active {

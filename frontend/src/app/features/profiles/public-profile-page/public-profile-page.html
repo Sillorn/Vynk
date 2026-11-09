@@ -39,6 +39,9 @@
         </button>
         }
       </div>
+      @if (connectionError()) {
+      <p class="connection-error" role="alert">{{ connectionError() }}</p>
+      }
       <a matButton="filled" [href]="cvUrl(profile)" [attr.download]="profile.username + '-cv.pdf'"
         >Download CV (PDF)</a
       >

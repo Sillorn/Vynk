@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ProfileService } from '../../../core/profiles/profile.service';
@@ -6,6 +6,7 @@ import { PublicProfile } from '../../../core/profiles/profile.models';
 import { RouterLink } from '@angular/router';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-profile-editor',
   standalone: true,
   imports: [MatButtonModule, ReactiveFormsModule, RouterLink],
@@ -425,8 +426,11 @@ export class ProfileEditor {
       }
     return true;
   }
+  hasUnsavedChanges(): boolean {
+    return this.form.dirty && !this.saving();
+  }
   @HostListener('window:beforeunload', ['$event']) unload(e: BeforeUnloadEvent) {
-    if (this.form.dirty) {
+    if (this.hasUnsavedChanges()) {
       e.preventDefault();
       e.returnValue = true;
     }

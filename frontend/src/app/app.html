@@ -45,11 +45,11 @@
           <path [attr.d]="item.icon" />
         </svg>
         <span>{{ item.label }}</span>
-        @if ( (item.path === '/network' && hasIncomingInvitations()) || (item.path === '/messages'
-        && hasUnreadMessages()) ) {
+        @if (hasIndicator(item.path)) {
         <span
           class="invitation-indicator"
-          [attr.aria-label]="item.path === '/messages' ? 'Unread messages' : 'Pending invitations'"
+          role="img"
+          [attr.aria-label]="indicatorLabel(item.path)"
         ></span>
         }
       </a>
@@ -63,6 +63,7 @@
       <a class="user-chip" routerLink="/profile/edit" aria-label="Edit your profile"
         >{{ user.username }}</a
       >
+      <a matButton routerLink="/settings">Settings</a>
       <button matButton type="button" (click)="logout()">Sign out</button>
       } @else {
       <a matButton routerLink="/login">Sign in</a>
@@ -84,31 +85,31 @@
     (closedStart)="closeMenu()"
   >
     <nav class="mobile-nav" aria-label="Primary">
-      <mat-nav-list>
+      <div class="mobile-nav__list">
         @for (item of navItems; track item.path) { @if (auth.user() || item.path === '/feed') {
         <a
-          mat-list-item
+          class="mobile-nav__item"
           [routerLink]="item.path"
           routerLinkActive="nav-item--active"
           ariaCurrentWhenActive="page"
           (click)="closeMenu()"
         >
-          <svg matListItemIcon viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path [attr.d]="item.icon" />
           </svg>
-          <span matListItemTitle>{{ item.label }}</span>
-          @if ( (item.path === '/network' && hasIncomingInvitations()) || (item.path === '/messages'
-          && hasUnreadMessages()) ) {
+          <span class="mobile-nav__label">{{ item.label }}</span>
+          @if (hasIndicator(item.path)) {
           <span
             class="invitation-indicator"
-            [attr.aria-label]="item.path === '/messages' ? 'Unread messages' : 'Pending invitations'"
+            role="img"
+            [attr.aria-label]="indicatorLabel(item.path)"
           ></span>
           }
         </a>
         } }
-      </mat-nav-list>
+      </div>
 
-      <mat-divider />
+      <hr class="mobile-nav__divider" />
 
       <div class="mobile-nav__links">
         <a matButton routerLink="/settings" (click)="closeMenu()">Settings</a>

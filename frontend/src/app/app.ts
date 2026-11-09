@@ -1,17 +1,24 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  effect,
+  Injector,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatListModule } from '@angular/material/list';
+import type { MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { filter, interval, map } from 'rxjs';
+import { filter, map } from 'rxjs';
 import { AuthService } from './core/auth/auth.service';
-import { ConnectionService } from './core/social/connection.service';
-import { MessagingService } from './core/social/messaging.service';
+import { PwaUpdateService } from './core/pwa-update.service';
+import { EventStreamService } from './core/social/event-stream.service';
+import { UnreadService } from './core/social/unread.service';
 
 interface NavItem {
   readonly label: string;
@@ -22,13 +29,11 @@ interface NavItem {
 const MOBILE_BREAKPOINT = '(max-width: 899px)';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
   imports: [
     MatButtonModule,
-    MatDividerModule,
-    MatListModule,
     MatSidenavModule,
-    MatSnackBarModule,
     MatToolbarModule,
     RouterLink,
     RouterLinkActive,
@@ -41,12 +46,11 @@ export class App {
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
-  private readonly snackBar = inject(MatSnackBar);
-  private readonly connections = inject(ConnectionService);
-  private readonly messaging = inject(MessagingService);
+  private readonly injector = inject(Injector);
+  private readonly events = inject(EventStreamService);
+  private readonly unread = inject(UnreadService);
+  private readonly pwa = inject(PwaUpdateService);
   protected readonly auth = inject(AuthService);
-  protected readonly hasIncomingInvitations = signal(false);
-  protected readonly hasUnreadMessages = signal(false);
 
   protected readonly isHandset = toSignal(
     this.breakpointObserver.observe(MOBILE_BREAKPOINT).pipe(map((state) => state.matches)),
@@ -95,45 +99,60 @@ export class App {
       if (this.isOffline()) this.showOfflineMessage();
     }
 
-    interval(60_000)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.refreshIncomingInvitations();
-        this.refreshUnreadMessages();
-      });
-
     this.router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((event) => {
+      .subscribe(() => {
         this.menuOpen.set(false);
-        this.refreshIncomingInvitations();
-        this.refreshUnreadMessages();
+        if (this.auth.user() && !this.isOffline()) this.unread.refreshAll();
       });
-  }
 
-  private refreshIncomingInvitations(): void {
-    if (!this.auth.user() || this.isOffline()) {
-      this.hasIncomingInvitations.set(false);
-      return;
-    }
-    this.connections.incoming().subscribe({
-      next: (requests) => this.hasIncomingInvitations.set(requests.length > 0),
-      error: () => this.hasIncomingInvitations.set(false),
+    // One shared SSE stream drives the navigation badges; events are hints, REST is the truth.
+    effect((onCleanup) => {
+      if (!this.auth.user()) {
+        this.unread.clear();
+        return;
+      }
+      this.unread.refreshAll();
+      onCleanup(
+        this.events.connect(
+          (name) =>
+            name === 'message' ? this.unread.refreshMessages() : this.unread.refreshNotifications(),
+          () => this.unread.refreshAll(),
+        ),
+      );
+    });
+
+    this.pwa.init();
+    effect(() => {
+      if (!this.pwa.updateAvailable()) return;
+      void this.notify('A new version of Vynk is available.', 'Reload', 0).then((ref) =>
+        ref.onAction().subscribe(() => this.pwa.applyUpdate()),
+      );
     });
   }
 
-  private refreshUnreadMessages(): void {
-    if (!this.auth.user() || this.isOffline()) {
-      this.hasUnreadMessages.set(false);
-      return;
+  protected hasIndicator(path: string): boolean {
+    switch (path) {
+      case '/network':
+        return this.unread.hasIncomingInvitations();
+      case '/messages':
+        return this.unread.hasUnreadMessages();
+      case '/notifications':
+        return this.unread.hasUnreadNotifications();
+      default:
+        return false;
     }
-    this.messaging.inbox().subscribe({
-      next: (items) => this.hasUnreadMessages.set(items.some((item) => item.unreadCount > 0)),
-      error: () => this.hasUnreadMessages.set(false),
-    });
+  }
+
+  protected indicatorLabel(path: string): string {
+    return path === '/messages'
+      ? 'Unread messages'
+      : path === '/notifications'
+        ? 'Unread notifications'
+        : 'Pending invitations';
   }
 
   private readonly handleOffline = (): void => {
@@ -143,15 +162,25 @@ export class App {
 
   private readonly handleOnline = (): void => {
     this.isOffline.set(false);
-    this.snackBar.open('You are back online.', 'Dismiss', { duration: 4000 });
+    void this.notify('You are back online.', 'Dismiss', 4000);
   };
 
   private showOfflineMessage(): void {
-    this.snackBar.open(
+    void this.notify(
       'You are offline. Changes and account actions need an internet connection.',
       'Dismiss',
-      { duration: 7000 },
+      7000,
     );
+  }
+
+  /** Snackbar code is loaded on first use to keep it out of the initial bundle. */
+  private async notify(
+    message: string,
+    action: string,
+    duration: number,
+  ): Promise<MatSnackBarRef<TextOnlySnackBar>> {
+    const { MatSnackBar } = await import('@angular/material/snack-bar');
+    return this.injector.get(MatSnackBar).open(message, action, { duration });
   }
 
   protected toggleMenu(): void {

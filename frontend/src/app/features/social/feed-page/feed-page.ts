@@ -12,7 +12,8 @@ import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/auth/auth.service';
-import { ProfileService } from '../../../core/profiles/profile.service';
+import { DisplayNameService } from '../../../core/profiles/display-name.service';
+import { describeHttpError } from '../../../shared/http-error';
 import {
   PostEngagement,
   PostService,
@@ -415,7 +416,7 @@ import {
         margin: 0;
       }
       .error {
-        color: #a52222;
+        color: var(--mat-sys-error);
       }
       .pagination {
         margin: 1.5rem 0;
@@ -432,8 +433,7 @@ import {
 export class FeedPage {
   protected readonly auth = inject(AuthService);
   private readonly service = inject(PostService);
-  private readonly profileService = inject(ProfileService);
-  protected readonly names = signal<Record<string, string>>({});
+  private readonly displayNames = inject(DisplayNameService);
   protected readonly posts = signal<readonly SocialPost[]>([]);
   private readonly composerDialog = viewChild<ElementRef<HTMLDialogElement>>('composerDialog');
   protected readonly page = signal(0);
@@ -455,12 +455,14 @@ export class FeedPage {
   protected draft = '';
   protected draftAudience: 'PUBLIC' | 'CONNECTIONS' = 'PUBLIC';
 
+  private loadSeq = 0;
+
   constructor() {
     this.load(0);
   }
 
   protected displayName(username: string): string {
-    return this.names()[username] ?? username;
+    return this.displayNames.name(username);
   }
 
   protected selectFeed(type: 'public' | 'connections'): void {
@@ -476,25 +478,23 @@ export class FeedPage {
       this.feedType() === 'connections'
         ? this.service.connectionsFeed(page)
         : this.service.feed(page);
+    const seq = ++this.loadSeq;
     request.subscribe({
       next: (result) => {
+        // A newer load (feed switch, paging, refresh) supersedes this response.
+        if (seq !== this.loadSeq) return;
         this.posts.set(result.items);
         for (const username of new Set(result.items.map((post) => post.username))) {
-          if (this.names()[username]) continue;
-          this.profileService.getPublicProfile(username).subscribe({
-            next: (profile) =>
-              this.names.update((current) => ({
-                ...current,
-                [username]: `${profile.firstName} ${profile.lastName}`.trim() || username,
-              })),
-          });
+          this.displayNames.load(username);
         }
         this.engagement.set({});
         this.expandedPostId.set(null);
         for (const post of result.items) {
           this.service.engagement(post.id).subscribe({
-            next: (state) =>
-              this.engagement.update((current) => ({ ...current, [post.id]: state })),
+            next: (state) => {
+              if (seq === this.loadSeq)
+                this.engagement.update((current) => ({ ...current, [post.id]: state }));
+            },
           });
         }
         this.page.set(result.page);
@@ -503,7 +503,8 @@ export class FeedPage {
         this.loading.set(false);
       },
       error: (err: HttpErrorResponse) => {
-        this.error.set(describeError(err));
+        if (seq !== this.loadSeq) return;
+        this.error.set(describeHttpError(err, 'Something went wrong. Please try again.'));
         this.loading.set(false);
       },
     });
@@ -529,7 +530,7 @@ export class FeedPage {
         this.load(0);
       },
       error: (err: HttpErrorResponse) => {
-        this.actionError.set(describeError(err));
+        this.actionError.set(describeHttpError(err, 'Something went wrong. Please try again.'));
         this.saving.set(false);
       },
     });
@@ -550,7 +551,7 @@ export class FeedPage {
         this.engagingId.set(null);
       },
       error: (err: HttpErrorResponse) => {
-        this.actionError.set(describeError(err));
+        this.actionError.set(describeHttpError(err, 'Something went wrong. Please try again.'));
         this.engagingId.set(null);
       },
     });
@@ -566,11 +567,13 @@ export class FeedPage {
     this.comments.set([]);
     this.service.comments(post.id).subscribe({
       next: (result) => {
+        if (this.expandedPostId() !== post.id) return;
         this.comments.set(result.items);
         this.commentsLoading.set(false);
       },
       error: (err: HttpErrorResponse) => {
-        this.actionError.set(describeError(err));
+        if (this.expandedPostId() !== post.id) return;
+        this.actionError.set(describeHttpError(err, 'Something went wrong. Please try again.'));
         this.commentsLoading.set(false);
       },
     });
@@ -595,7 +598,7 @@ export class FeedPage {
         this.saving.set(false);
       },
       error: (err: HttpErrorResponse) => {
-        this.actionError.set(describeError(err));
+        this.actionError.set(describeHttpError(err, 'Something went wrong. Please try again.'));
         this.saving.set(false);
       },
     });
@@ -620,7 +623,7 @@ export class FeedPage {
         this.load(this.page());
       },
       error: (err: HttpErrorResponse) => {
-        this.actionError.set(describeError(err));
+        this.actionError.set(describeHttpError(err, 'Something went wrong. Please try again.'));
         this.saving.set(false);
       },
     });
@@ -636,18 +639,9 @@ export class FeedPage {
         this.load(this.page());
       },
       error: (err: HttpErrorResponse) => {
-        this.actionError.set(describeError(err));
+        this.actionError.set(describeHttpError(err, 'Something went wrong. Please try again.'));
         this.saving.set(false);
       },
     });
   }
-}
-
-function describeError(error: HttpErrorResponse): string {
-  if (error.status === 0)
-    return 'The server could not be reached. Check your connection and try again.';
-  const detail = error.error?.detail;
-  return typeof detail === 'string' && detail.trim()
-    ? detail
-    : 'Something went wrong. Please try again.';
 }

@@ -211,3 +211,8 @@
     align-items: flex-start;
   }
 }
+
+.connection-error {
+  margin: 0.5rem 0;
+  color: var(--mat-sys-error);
+}

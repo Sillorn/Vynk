@@ -172,7 +172,7 @@ import { AuthService } from '../../../core/auth/auth.service';
         padding: 2rem;
       }
       .error {
-        color: #a52222;
+        color: var(--mat-sys-error);
       }
       .pagination {
         display: flex;
