@@ -1,0 +1,82 @@
+# Vynk on the formic cluster, served at https://vynk.armrib.duckdns.org.
+# Check with `cluster lint deploy.yaml`. Needs the secret `vynk-db-password` first:
+#   cluster secret create name=vynk-db-password < password.txt
+name: dd/vynk
+
+environments:
+  # Spring reads these as env vars. Bind to all interfaces: the Edge reaches the
+  # backend over the overlay, and the app's own default is 127.0.0.1.
+  - name: SERVER_ADDRESS
+    value: 0.0.0.0
+  - name: SERVER_PORT
+    value: ${port.http}
+  - name: SPRING_PROFILES_ACTIVE
+    value: prod
+  # H2 file DB on the service's own data mount, which is snapshotted (see below).
+  - name: SPRING_DATASOURCE_URL
+    value: jdbc:h2:file:${mount.db}/vynk;DB_CLOSE_ON_EXIT=FALSE
+  - name: SPRING_DATASOURCE_USERNAME
+    value: vynk
+  - name: SPRING_DATASOURCE_PASSWORD
+    from_vault: vynk-db-password
+  - name: VYNK_API_DOCS_ENABLED
+    value: "false"
+
+commands:
+  - name: vynk
+    bin: /usr/bin/java
+    args: -Xmx256m -jar vynk.jar
+    memory_limit: 536870912  # 512 MiB: heap plus JVM overhead; check with `cluster limits`
+    isolation: chroot
+    rootfs:
+      distro: alpine
+      version: "3.21.3"      # must be a full point release
+
+services:
+  - name: vynk
+    command: vynk
+    ports:
+      - name: http
+    instance_count: 1
+    # One process owns the H2 file; a rolling upgrade would start a second one
+    # while the first still holds the database.
+    upgrade_strategy: hard_in_place
+    artifacts:
+      - name: vynk-backend
+    packages:
+      - name: openjdk25-jre-headless   # verify this exists in the chosen Alpine release
+    mounts:
+      - name: app
+        kind: artifact
+        artifact: vynk-backend
+        path: vynk.jar
+        target: vynk.jar
+      - name: db
+        kind: data
+        snapshot: vynk-backup
+    environments:
+      - SERVER_ADDRESS
+      - SERVER_PORT
+      - SPRING_PROFILES_ACTIVE
+      - SPRING_DATASOURCE_URL
+      - SPRING_DATASOURCE_USERNAME
+      - SPRING_DATASOURCE_PASSWORD
+      - VYNK_API_DOCS_ENABLED
+
+sites:
+  - name: vynk
+    cert: vynk.armrib.duckdns.org
+    artifact: vynk-frontend
+    routes:
+      - paths: [api]           # /api/* (including SSE) goes to the backend; everything else is the SPA
+        service: vynk
+
+schedules:
+  - name: nightly
+    value: "0 3 * * *"
+
+snapshots:
+  - name: vynk-backup
+    triggers: schedule|drain|crash
+    schedule: nightly
+    retain: 5

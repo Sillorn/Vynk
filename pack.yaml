@@ -1,0 +1,19 @@
+# Packs for the formic cluster (cluster.armrib.duckdns.org). Build with `cluster pack`.
+packs:
+  - name: vynk-backend
+    cpu: any                 # JVM bytecode runs on any arch
+    workdir: backend
+    build: ./mvnw -B -ntp -DskipTests package
+    compression: zstd
+    artifacts:
+      - src: target/vynk-backend-0.0.1-SNAPSHOT.jar
+        dst: vynk.jar
+
+  - name: vynk-frontend
+    cpu: any
+    workdir: frontend
+    build: npm ci && npm run build
+    compression: zstd
+    artifacts:
+      - src: dist/frontend/browser
+        dst: .
