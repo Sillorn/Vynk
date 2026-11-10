@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, WritableSignal, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,6 +8,10 @@ import { describeHttpError } from '../../../shared/http-error';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ConnectionRequest, ConnectionService } from '../../../core/social/connection.service';
 import { UnreadService } from '../../../core/social/unread.service';
+import { PageResponse } from '../../../core/social/post.service';
+import { Observable } from 'rxjs';
+
+type PagedList = 'contacts' | 'incoming' | 'outgoing';
 
 @Component({
   selector: 'app-network-page',
@@ -64,6 +68,11 @@ import { UnreadService } from '../../../core/social/unread.service';
                 You don't have any contact yet, <a routerLink="/people">connect with people now!</a>
               </p>
             }
+            @if (contactsHasNext()) {
+              <button mat-button type="button" (click)="loadMore('contacts')" [disabled]="busy()">
+                Load more contacts
+              </button>
+            }
           </section>
         } @else {
           <form class="surface-card invite" (ngSubmit)="send()">
@@ -105,6 +114,11 @@ import { UnreadService } from '../../../core/social/unread.service';
             } @else {
               <p class="muted">No pending invitations.</p>
             }
+            @if (incomingHasNext()) {
+              <button mat-button type="button" (click)="loadMore('incoming')" [disabled]="busy()">
+                Load more invitations
+              </button>
+            }
           </section>
           <section class="surface-card list">
             <h2>Sent invitations</h2>
@@ -120,6 +134,11 @@ import { UnreadService } from '../../../core/social/unread.service';
               }
             } @else {
               <p class="muted">No outgoing invitations.</p>
+            }
+            @if (outgoingHasNext()) {
+              <button mat-button type="button" (click)="loadMore('outgoing')" [disabled]="busy()">
+                Load more invitations
+              </button>
             }
           </section>
         }
@@ -249,8 +268,12 @@ export class NetworkPage {
   private readonly unread = inject(UnreadService);
   protected readonly incoming = signal<readonly ConnectionRequest[]>([]);
   protected readonly contacts = signal<readonly string[]>([]);
+  protected readonly contactsHasNext = signal(false);
+  protected readonly incomingHasNext = signal(false);
+  protected readonly outgoingHasNext = signal(false);
   protected readonly tab = signal<'contacts' | 'invitations'>('contacts');
   protected readonly outgoing = signal<readonly ConnectionRequest[]>([]);
+  private readonly pages: Record<PagedList, number> = { contacts: 0, incoming: 0, outgoing: 0 };
   protected readonly error = signal<string | null>(null);
   protected readonly message = signal<string | null>(null);
   protected readonly busy = signal(false);
@@ -266,36 +289,70 @@ export class NetworkPage {
       if (++completed === 3) this.busy.set(false);
     };
     this.busy.set(true);
-    this.service.contacts().subscribe({
-      next: (value) => {
-        this.contacts.set(value);
-        done();
-      },
-      error: (err) => {
-        this.fail(err);
-        done();
-      },
-    });
-    this.service.incoming().subscribe({
-      next: (value) => {
-        this.incoming.set(value);
-        done();
-      },
-      error: (err) => {
-        this.fail(err);
-        done();
-      },
-    });
-    this.service.outgoing().subscribe({
-      next: (value) => {
-        this.outgoing.set(value);
-        done();
-      },
-      error: (err) => {
-        this.fail(err);
-        done();
-      },
-    });
+    this.applyPage(
+      'contacts',
+      this.service.contacts(0),
+      this.contacts,
+      this.contactsHasNext,
+      0,
+      done,
+    );
+    this.applyPage(
+      'incoming',
+      this.service.incoming(0),
+      this.incoming,
+      this.incomingHasNext,
+      0,
+      done,
+    );
+    this.applyPage(
+      'outgoing',
+      this.service.outgoing(0),
+      this.outgoing,
+      this.outgoingHasNext,
+      0,
+      done,
+    );
+  }
+
+  protected loadMore(list: PagedList): void {
+    if (this.busy()) return;
+    this.busy.set(true);
+    this.error.set(null);
+    const page = this.pages[list] + 1;
+    const done = () => this.busy.set(false);
+    switch (list) {
+      case 'contacts':
+        this.applyPage(
+          list,
+          this.service.contacts(page),
+          this.contacts,
+          this.contactsHasNext,
+          page,
+          done,
+        );
+        break;
+      case 'incoming':
+        this.applyPage(
+          list,
+          this.service.incoming(page),
+          this.incoming,
+          this.incomingHasNext,
+          page,
+          done,
+        );
+        break;
+      case 'outgoing':
+        this.applyPage(
+          list,
+          this.service.outgoing(page),
+          this.outgoing,
+          this.outgoingHasNext,
+          page,
+          done,
+        );
+        break;
+    }
   }
   protected initials(username: string): string {
     return username.trim().slice(0, 2).toUpperCase();
@@ -335,6 +392,29 @@ export class NetworkPage {
       },
     });
   }
+  /** Page 0 replaces the list; later pages append. */
+  private applyPage<T>(
+    list: PagedList,
+    request: Observable<PageResponse<T>>,
+    target: WritableSignal<readonly T[]>,
+    hasNext: WritableSignal<boolean>,
+    page: number,
+    done: () => void,
+  ): void {
+    request.subscribe({
+      next: (response) => {
+        target.set(page > 0 ? [...target(), ...response.items] : response.items);
+        hasNext.set(response.hasNext);
+        this.pages[list] = response.page;
+        done();
+      },
+      error: (err) => {
+        this.fail(err);
+        done();
+      },
+    });
+  }
+
   private fail(err: HttpErrorResponse): void {
     this.error.set(describeHttpError(err, 'Unable to update your network.'));
   }

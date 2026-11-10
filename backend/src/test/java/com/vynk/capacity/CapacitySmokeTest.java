@@ -108,21 +108,49 @@ class CapacitySmokeTest {
     }
 
     @Test
-    void connectionListsGrowLinearlyAndAreNotYetPaginated() throws Exception {
-        // Documents current behaviour until PN-066: /connections, /requests/incoming and
-        // /requests/outgoing return unbounded JSON arrays. Asserted so a future change to paging
-        // makes this test fail and be updated deliberately.
+    void connectionListsArePagedAndCapped() throws Exception {
+        // PN-066: /connections, /requests/incoming and /requests/outgoing share the PageQuery /
+        // PageResponse contract, so every page is bounded by the 100-item cap.
         MockHttpSession hub = register("caphub", "Cap", "Hub");
+        MockHttpSession outgoingHub = register("capout", "Cap", "Outgoing");
         for (int i = 0; i < PENDING_REQUESTS; i++) {
             MockHttpSession sender = register(senderName(i), "Sender", "Number");
             mvc.perform(post("/api/v1/connections/caphub/requests").session(sender).with(csrf()))
                     .andExpect(status().isOk());
         }
-        MvcResult incoming = mvc.perform(get("/api/v1/connections/requests/incoming").session(hub))
-                .andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andReturn();
-        int count = mapper.readTree(incoming.getResponse().getContentAsString()).size();
-        assertThat(count).isEqualTo(PENDING_REQUESTS);
-        baseline.add("incoming requests returned unpaginated: " + count + " items for " + PENDING_REQUESTS + " pending");
+        for (int i = 0; i < PENDING_REQUESTS; i++) {
+            mvc.perform(post("/api/v1/connections/" + senderName(i) + "/requests").session(outgoingHub).with(csrf()))
+                    .andExpect(status().isOk());
+        }
+
+        // Pages of 10 over 25 pending requests: 3 pages, no repeats, no gaps.
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        for (int p = 0; p < 3; p++) {
+            JsonNode page = page(get("/api/v1/connections/requests/incoming").param("page", String.valueOf(p)).param("size", "10"), hub);
+            assertThat(page.get("items")).hasSize(p < 2 ? 10 : 5);
+            assertThat(page.get("totalElements").asLong()).isEqualTo(PENDING_REQUESTS);
+            assertThat(page.get("totalPages").asInt()).isEqualTo(3);
+            assertThat(page.get("hasNext").asBoolean()).isEqualTo(p < 2);
+            page.get("items").forEach(item -> seen.add(item.get("id").asLong()));
+        }
+        assertThat(seen).hasSize(PENDING_REQUESTS);
+        assertThat(page(get("/api/v1/connections/requests/incoming").param("page", "3").param("size", "10"), hub)
+                .get("items")).isEmpty();
+
+        // Default size is applied when omitted; the cap is enforced, never silently clamped.
+        assertThat(page(get("/api/v1/connections/requests/incoming"), hub).get("items")).hasSize(20);
+        mvc.perform(get("/api/v1/connections/requests/incoming").session(hub).param("size", "101"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/connections/requests/outgoing").session(outgoingHub).param("size", "101"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/connections").session(hub).param("size", "101"))
+                .andExpect(status().isBadRequest());
+
+        JsonNode outgoing = page(get("/api/v1/connections/requests/outgoing").param("size", "100"), outgoingHub);
+        assertThat(outgoing.get("items")).hasSize(PENDING_REQUESTS);
+        assertThat(outgoing.get("hasNext").asBoolean()).isFalse();
+
+        baseline.add("incoming requests paged: 10 per page over " + PENDING_REQUESTS + " pending = 3 pages, bounded by the 100-item cap");
         reportBaseline();
     }
 
@@ -149,7 +177,7 @@ class CapacitySmokeTest {
                 .andExpect(status().isOk());
         MvcResult incoming = mvc.perform(get("/api/v1/connections/requests/incoming").session(peer))
                 .andExpect(status().isOk()).andReturn();
-        long requestId = mapper.readTree(incoming.getResponse().getContentAsString()).get(0).get("id").asLong();
+        long requestId = mapper.readTree(incoming.getResponse().getContentAsString()).get("items").get(0).get("id").asLong();
         mvc.perform(post("/api/v1/connections/requests/" + requestId + "/accept").session(peer).with(csrf()))
                 .andExpect(status().isOk());
     }

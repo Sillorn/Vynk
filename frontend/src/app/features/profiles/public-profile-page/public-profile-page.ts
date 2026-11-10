@@ -120,7 +120,7 @@ export class PublicProfilePage {
             next: (connected) => {
               this.connected.set(connected);
               if (!connected) {
-                this.connections.outgoing().subscribe({
+                this.connections.allOutgoing().subscribe({
                   next: (requests) =>
                     this.invitationSent.set(
                       requests.some(

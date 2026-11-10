@@ -159,7 +159,7 @@ class ConversationInboxIntegrationTest {
                 .andExpect(status().isOk());
         MvcResult incoming = mvc.perform(get("/api/v1/connections/requests/incoming").session(peerSession))
                 .andExpect(status().isOk()).andReturn();
-        long requestId = mapper.readTree(incoming.getResponse().getContentAsString()).get(0).get("id").asLong();
+        long requestId = mapper.readTree(incoming.getResponse().getContentAsString()).get("items").get(0).get("id").asLong();
         mvc.perform(post("/api/v1/connections/requests/" + requestId + "/accept").session(peerSession).with(csrf()))
                 .andExpect(status().isOk());
     }

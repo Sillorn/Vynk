@@ -11,9 +11,12 @@ import com.vynk.identity.repositories.UserAccountRepository;
 import com.vynk.notifications.entities.Notification;
 import com.vynk.notifications.repositories.NotificationRepository;
 import com.vynk.messaging.UserEventStream;
+import com.vynk.shared.api.PageQuery;
+import com.vynk.shared.api.PageResponse;
 import com.vynk.shared.error.ApiException;
-import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -38,8 +41,9 @@ public class ConnectionService {
     }
 
     @Transactional(readOnly = true)
-    public List<String> contacts(String actor) {
-        return accepted.findContacts(account(actor).getId());
+    public PageResponse<String> contacts(String actor, PageQuery query) {
+        Page<String> page = accepted.findContacts(account(actor).getId(), pageRequest(query));
+        return PageResponse.of(page.getContent(), page.getNumber(), page.getSize(), page.getTotalElements());
     }
 
     @Transactional(readOnly = true)
@@ -50,15 +54,17 @@ public class ConnectionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ConnectionApi.Request> incoming(String actor) {
-        return requests.findByRecipientUsernameIgnoreCaseAndStatusOrderByCreatedAtDesc(actor, ConnectionRequestStatus.PENDING)
-                .stream().map(r -> new ConnectionApi.Request(r.getId(), r.getSender().getUsername(), r.getCreatedAt())).toList();
+    public PageResponse<ConnectionApi.Request> incoming(String actor, PageQuery query) {
+        Page<ConnectionRequest> page = requests.findByRecipientUsernameIgnoreCaseAndStatusOrderByCreatedAtDescIdDesc(
+                actor, ConnectionRequestStatus.PENDING, pageRequest(query));
+        return toResponse(page, r -> new ConnectionApi.Request(r.getId(), r.getSender().getUsername(), r.getCreatedAt()));
     }
 
     @Transactional(readOnly = true)
-    public List<ConnectionApi.Request> outgoing(String actor) {
-        return requests.findBySenderUsernameIgnoreCaseAndStatusOrderByCreatedAtDesc(actor, ConnectionRequestStatus.PENDING)
-                .stream().map(r -> new ConnectionApi.Request(r.getId(), r.getRecipient().getUsername(), r.getCreatedAt())).toList();
+    public PageResponse<ConnectionApi.Request> outgoing(String actor, PageQuery query) {
+        Page<ConnectionRequest> page = requests.findBySenderUsernameIgnoreCaseAndStatusOrderByCreatedAtDescIdDesc(
+                actor, ConnectionRequestStatus.PENDING, pageRequest(query));
+        return toResponse(page, r -> new ConnectionApi.Request(r.getId(), r.getRecipient().getUsername(), r.getCreatedAt()));
     }
 
     @Transactional
@@ -135,6 +141,14 @@ public class ConnectionService {
         if (!owner.equalsIgnoreCase(actor)) throw ApiException.notFound("Connection request not found.");
         if (req.getStatus() != expected) throw ApiException.conflict("Request is no longer pending.");
         req.setStatus(next);
+    }
+
+    private static PageRequest pageRequest(PageQuery query) {
+        return PageRequest.of(query.pageNumber(), query.pageSize());
+    }
+
+    private static <S, T> PageResponse<T> toResponse(Page<S> page, java.util.function.Function<S, T> mapper) {
+        return PageResponse.of(page.getContent().stream().map(mapper).toList(), page.getNumber(), page.getSize(), page.getTotalElements());
     }
 
     private ConnectionRequest request(long id) {

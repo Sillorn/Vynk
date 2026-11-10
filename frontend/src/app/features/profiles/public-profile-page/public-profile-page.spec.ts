@@ -18,7 +18,7 @@ interface Internals {
 
 describe('PublicProfilePage', () => {
   const profiles = { getPublicProfile: vi.fn() };
-  const connections = { isConnected: vi.fn(), outgoing: vi.fn(), send: vi.fn() };
+  const connections = { isConnected: vi.fn(), allOutgoing: vi.fn(), send: vi.fn() };
   const profile = { username: 'bob', firstName: 'Bob', lastName: 'Builder' };
 
   function create(viewer: string | null = 'ada') {
@@ -46,7 +46,7 @@ describe('PublicProfilePage', () => {
     vi.resetAllMocks();
     profiles.getPublicProfile.mockReturnValue(of(profile));
     connections.isConnected.mockReturnValue(of(false));
-    connections.outgoing.mockReturnValue(of([]));
+    connections.allOutgoing.mockReturnValue(of([]));
   });
 
   it('loads the profile and checks the connection state for signed-in viewers', () => {
@@ -65,7 +65,7 @@ describe('PublicProfilePage', () => {
   });
 
   it('marks a pending outgoing invitation', () => {
-    connections.outgoing.mockReturnValue(of([{ username: 'Bob' }]));
+    connections.allOutgoing.mockReturnValue(of([{ username: 'Bob' }]));
     const { page } = create();
     expect(page.invitationSent()).toBe(true);
   });

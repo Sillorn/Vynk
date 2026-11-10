@@ -404,7 +404,7 @@ export class MessagesPage {
     effect((onCleanup) => {
       if (this.auth.user()) {
         this.reload();
-        this.connectionService.contacts().subscribe({
+        this.connectionService.allContacts().subscribe({
           next: (contacts) => {
             this.contacts.set(contacts);
             contacts.forEach((username) => this.displayNames.load(username));

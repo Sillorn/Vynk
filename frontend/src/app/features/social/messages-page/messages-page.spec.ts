@@ -60,7 +60,7 @@ describe('MessagesPage', () => {
       providers: [
         { provide: AuthService, useValue: { user: signal({ username: 'ada' }) } },
         { provide: MessagingService, useValue: messaging },
-        { provide: ConnectionService, useValue: { contacts: () => of([]) } },
+        { provide: ConnectionService, useValue: { allContacts: () => of([]) } },
         { provide: ProfileService, useValue: { getPublicProfile: () => of({}) } },
         { provide: EventStreamService, useValue: { connect: () => () => {} } },
         { provide: UnreadService, useValue: { refreshMessages: vi.fn() } },

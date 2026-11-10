@@ -21,8 +21,8 @@ export class UnreadService {
   }
 
   refreshInvitations(): void {
-    this.connections.incoming().subscribe({
-      next: (requests) => this.hasIncomingInvitations.set(requests.length > 0),
+    this.connections.incoming(0, 1).subscribe({
+      next: (page) => this.hasIncomingInvitations.set(page.totalElements > 0),
       error: () => this.hasIncomingInvitations.set(false),
     });
   }

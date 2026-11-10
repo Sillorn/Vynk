@@ -23,10 +23,10 @@ describe('UnreadService', () => {
   });
 
   it('flags pending invitations', () => {
-    connections.incoming.mockReturnValue(of([{ id: 1 }]));
+    connections.incoming.mockReturnValue(of({ items: [{ id: 1 }], totalElements: 1 }));
     service.refreshInvitations();
     expect(service.hasIncomingInvitations()).toBe(true);
-    connections.incoming.mockReturnValue(of([]));
+    connections.incoming.mockReturnValue(of({ items: [], totalElements: 0 }));
     service.refreshInvitations();
     expect(service.hasIncomingInvitations()).toBe(false);
   });
@@ -59,14 +59,14 @@ describe('UnreadService', () => {
     service.refreshMessages();
     expect(service.hasUnreadMessages()).toBe(false);
 
-    connections.incoming.mockReturnValue(of([{ id: 1 }]));
+    connections.incoming.mockReturnValue(of({ items: [{ id: 1 }], totalElements: 1 }));
     service.refreshInvitations();
     service.clear();
     expect(service.hasIncomingInvitations()).toBe(false);
   });
 
   it('refreshAll refreshes every indicator', () => {
-    connections.incoming.mockReturnValue(of([{ id: 1 }]));
+    connections.incoming.mockReturnValue(of({ items: [{ id: 1 }], totalElements: 1 }));
     messaging.unreadSummary.mockReturnValue(of({ unreadConversations: 1 }));
     notifications.list.mockReturnValue(of({ items: [{ readAt: null }], hasNext: false }));
     service.refreshAll();

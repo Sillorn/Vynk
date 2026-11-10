@@ -337,13 +337,7 @@
 - **Type:** Task · **Priority:** P1 · **Relative size:** 3 points · **Decision:** CONFIRMED · **Status:** Done
 - **Depends on:** PN-037, PN-048
 - **Acceptance criteria:** Bounded feeds and connections, H2 and SSE resource tests with baseline reported
-- **Note:** Bounded feeds and H2/SSE baselines are covered by `CapacitySmokeTest` and `UserEventStreamCapacityTest`. Connection lists are not yet bounded; that work is tracked in PN-066.
-
-### PN-055 — Confirm proposed Round 8 behavior defaults
-
-- **Type:** Task · **Priority:** P1 · **Relative size:** 2 points · **Decision:** PROPOSED · **Status:** Backlog
-- **Depends on:** PN-016, PN-026, PN-037, PN-048
-- **Acceptance criteria:** Product owner chooses Q116-137 defaults; amended tickets and acceptance cases linked
+- **Note:** Bounded feeds and H2/SSE baselines are covered by `CapacitySmokeTest` and `UserEventStreamCapacityTest`. Connection lists were bounded later by PN-066.
 
 ### PN-056 — Final integration E2E regression suite
 
@@ -405,7 +399,7 @@
 
 ### PN-066 — Paginate connection lists and contact list
 
-- **Type:** Story · **Priority:** P1 · **Relative size:** 5 points · **Decision:** CONFIRMED · **Status:** Backlog
+- **Type:** Story · **Priority:** P1 · **Relative size:** 5 points · **Decision:** CONFIRMED · **Status:** Done
 - **Depends on:** PN-035, PN-036, PN-054
 - **Acceptance criteria:** `GET /connections`, `/connections/requests/incoming` and `/connections/requests/outgoing` use the shared PageQuery/PageResponse contract with the 100-item cap; network screens load pages; API tests cover paging and the cap; expectations in `CapacitySmokeTest` updated
 - **Note:** Found by PN-054. These endpoints currently return unbounded arrays.

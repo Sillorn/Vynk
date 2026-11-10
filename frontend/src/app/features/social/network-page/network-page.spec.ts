@@ -10,6 +10,9 @@ import { NetworkPage } from './network-page';
 interface Internals {
   username: string;
   tab: { set(v: string): void };
+  contacts(): readonly string[];
+  contactsHasNext(): boolean;
+  loadMore(list: string): void;
   busy(): boolean;
   error(): string | null;
   send(): void;
@@ -28,6 +31,14 @@ describe('NetworkPage', () => {
   };
   const unread = { refreshInvitations: vi.fn() };
   const request = { id: 7, username: 'bob', createdAt: '2026-01-01T00:00:00Z' };
+  const pageOf = <T>(items: T[], page = 0, hasNext = false) => ({
+    items,
+    page,
+    size: 20,
+    totalElements: items.length,
+    totalPages: hasNext ? page + 2 : page + 1,
+    hasNext,
+  });
 
   function create(signedIn = true) {
     TestBed.configureTestingModule({
@@ -45,9 +56,21 @@ describe('NetworkPage', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    service.contacts.mockReturnValue(of(['bob']));
-    service.incoming.mockReturnValue(of([request]));
-    service.outgoing.mockReturnValue(of([]));
+    service.contacts.mockReturnValue(of(pageOf(['bob'])));
+    service.incoming.mockReturnValue(of(pageOf([request])));
+    service.outgoing.mockReturnValue(of(pageOf([])));
+  });
+
+  it('appends the next page when loading more contacts', () => {
+    service.contacts.mockReturnValue(of(pageOf(['bob'], 0, true)));
+    const { page } = create();
+    expect(page.contactsHasNext()).toBe(true);
+    service.contacts.mockReturnValue(of(pageOf(['carol'], 1, false)));
+    page.loadMore('contacts');
+    expect(service.contacts).toHaveBeenLastCalledWith(1);
+    expect(page.contacts()).toEqual(['bob', 'carol']);
+    expect(page.contactsHasNext()).toBe(false);
+    expect(page.busy()).toBe(false);
   });
 
   it('does not load anything for anonymous visitors', () => {

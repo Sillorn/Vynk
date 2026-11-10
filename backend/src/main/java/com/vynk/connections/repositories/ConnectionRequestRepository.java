@@ -3,6 +3,8 @@ package com.vynk.connections.repositories;
 import com.vynk.connections.ConnectionRequestStatus;
 import com.vynk.connections.entities.ConnectionRequest;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ConnectionRequestRepository extends JpaRepository<ConnectionRequest, Long> {
@@ -12,9 +14,9 @@ public interface ConnectionRequestRepository extends JpaRepository<ConnectionReq
     boolean existsBySenderUsernameIgnoreCaseAndRecipientUsernameIgnoreCase(
             String senderUsername, String recipientUsername);
 
-    java.util.List<ConnectionRequest> findByRecipientUsernameIgnoreCaseAndStatusOrderByCreatedAtDesc(
-            String username, ConnectionRequestStatus status);
+    Page<ConnectionRequest> findByRecipientUsernameIgnoreCaseAndStatusOrderByCreatedAtDescIdDesc(
+            String username, ConnectionRequestStatus status, Pageable pageable);
 
-    java.util.List<ConnectionRequest> findBySenderUsernameIgnoreCaseAndStatusOrderByCreatedAtDesc(
-            String username, ConnectionRequestStatus status);
+    Page<ConnectionRequest> findBySenderUsernameIgnoreCaseAndStatusOrderByCreatedAtDescIdDesc(
+            String username, ConnectionRequestStatus status, Pageable pageable);
 }

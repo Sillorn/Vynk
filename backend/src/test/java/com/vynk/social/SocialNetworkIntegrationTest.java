@@ -66,8 +66,8 @@ class SocialNetworkIntegrationTest {
         mvc.perform(post("/api/v1/connections/socialbob/requests").session(alice).with(csrf()))
                 .andExpect(status().isOk());
         MvcResult outgoing = mvc.perform(get("/api/v1/connections/requests/incoming").session(bob))
-                .andExpect(status().isOk()).andExpect(jsonPath("$[0].username").value("socialalice")).andReturn();
-        long requestId = mapper.readTree(outgoing.getResponse().getContentAsString()).get(0).get("id").asLong();
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].username").value("socialalice")).andReturn();
+        long requestId = mapper.readTree(outgoing.getResponse().getContentAsString()).get("items").get(0).get("id").asLong();
         mvc.perform(post("/api/v1/connections/requests/" + requestId + "/accept").session(bob).with(csrf()))
                 .andExpect(status().isOk());
         mvc.perform(get("/api/v1/posts/connections").session(bob))
@@ -110,7 +110,7 @@ class SocialNetworkIntegrationTest {
         // Accepted connections can read and engage.
         MvcResult incoming = mvc.perform(get("/api/v1/connections/requests/incoming").session(friend))
                 .andExpect(status().isOk()).andReturn();
-        long requestId = mapper.readTree(incoming.getResponse().getContentAsString()).get(0).get("id").asLong();
+        long requestId = mapper.readTree(incoming.getResponse().getContentAsString()).get("items").get(0).get("id").asLong();
         mvc.perform(post("/api/v1/connections/requests/" + requestId + "/accept").session(friend).with(csrf()))
                 .andExpect(status().isOk());
         mvc.perform(post("/api/v1/posts/" + postId + "/likes").session(friend).with(csrf()))
@@ -137,7 +137,7 @@ class SocialNetworkIntegrationTest {
         mvc.perform(post("/api/v1/connections/dirtwo/requests").session(alice).with(csrf())).andExpect(status().isOk());
         MvcResult outgoing = mvc.perform(get("/api/v1/connections/requests/outgoing").session(alice))
                 .andExpect(status().isOk()).andReturn();
-        long firstRequest = mapper.readTree(outgoing.getResponse().getContentAsString()).get(0).get("id").asLong();
+        long firstRequest = mapper.readTree(outgoing.getResponse().getContentAsString()).get("items").get(0).get("id").asLong();
         mvc.perform(delete("/api/v1/connections/requests/" + firstRequest).session(alice).with(csrf()))
                 .andExpect(status().isOk());
 
@@ -146,11 +146,11 @@ class SocialNetworkIntegrationTest {
         mvc.perform(post("/api/v1/connections/dirtwo/requests").session(alice).with(csrf()))
                 .andExpect(status().isConflict());
         mvc.perform(get("/api/v1/connections/requests/outgoing").session(alice))
-                .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty());
 
         MvcResult incoming = mvc.perform(get("/api/v1/connections/requests/incoming").session(alice))
                 .andExpect(status().isOk()).andReturn();
-        long bobsRequest = mapper.readTree(incoming.getResponse().getContentAsString()).get(0).get("id").asLong();
+        long bobsRequest = mapper.readTree(incoming.getResponse().getContentAsString()).get("items").get(0).get("id").asLong();
         mvc.perform(post("/api/v1/connections/requests/" + bobsRequest + "/accept").session(alice).with(csrf()))
                 .andExpect(status().isOk());
         mvc.perform(post("/api/v1/connections/requests/" + bobsRequest + "/accept").session(alice).with(csrf()))
@@ -166,7 +166,7 @@ class SocialNetworkIntegrationTest {
                 .andExpect(status().isOk());
         MvcResult incoming = mvc.perform(get("/api/v1/connections/requests/incoming").session(bob))
                 .andExpect(status().isOk()).andReturn();
-        long requestId = mapper.readTree(incoming.getResponse().getContentAsString()).get(0).get("id").asLong();
+        long requestId = mapper.readTree(incoming.getResponse().getContentAsString()).get("items").get(0).get("id").asLong();
         mvc.perform(post("/api/v1/connections/requests/" + requestId + "/accept").session(bob).with(csrf()))
                 .andExpect(status().isOk());
 

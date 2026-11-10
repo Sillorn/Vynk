@@ -1,14 +1,17 @@
 package com.vynk.connections.repositories;
 
 import com.vynk.connections.entities.AcceptedConnection;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AcceptedConnectionRepository extends JpaRepository<AcceptedConnection, AcceptedConnection.Key> {
-    @Query(value = "SELECT u.username FROM accepted_connection c JOIN user_account u ON u.id = CASE WHEN c.user_low_id = :userId THEN c.user_high_id ELSE c.user_low_id END WHERE c.user_low_id = :userId OR c.user_high_id = :userId ORDER BY u.username_lower", nativeQuery = true)
-    java.util.List<String> findContacts(@Param("userId") long userId);
+    @Query(value = "SELECT u.username FROM accepted_connection c JOIN user_account u ON u.id = CASE WHEN c.user_low_id = :userId THEN c.user_high_id ELSE c.user_low_id END WHERE c.user_low_id = :userId OR c.user_high_id = :userId ORDER BY u.username_lower",
+            countQuery = "SELECT COUNT(*) FROM accepted_connection WHERE user_low_id = :userId OR user_high_id = :userId", nativeQuery = true)
+    Page<String> findContacts(@Param("userId") long userId, Pageable pageable);
 
     @org.springframework.data.jpa.repository.Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END FROM accepted_connection WHERE user_low_id = :low AND user_high_id = :high", nativeQuery = true)
     boolean existsPair(@org.springframework.data.repository.query.Param("low") long low,
