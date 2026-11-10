@@ -1,6 +1,6 @@
 # Implementation backlog — Vynk
 
-**64 tickets, M0–M6.** Ticket details and statuses below match `TICKETS.csv`. Dependency links refer to ticket IDs. `PROPOSED` decisions are approval-gated pending Round 8.
+**66 tickets, M0–M6.** Ticket details and statuses below match `TICKETS.csv`. Dependency links refer to ticket IDs. `PROPOSED` decisions are approval-gated pending Round 8.
 
 ## M0 — Foundation
 
@@ -334,9 +334,10 @@
 
 ### PN-054 — Add performance / capacity smoke scenarios
 
-- **Type:** Task · **Priority:** P1 · **Relative size:** 3 points · **Decision:** CONFIRMED · **Status:** Backlog
+- **Type:** Task · **Priority:** P1 · **Relative size:** 3 points · **Decision:** CONFIRMED · **Status:** Done
 - **Depends on:** PN-037, PN-048
 - **Acceptance criteria:** Bounded feeds and connections, H2 and SSE resource tests with baseline reported
+- **Note:** Bounded feeds and H2/SSE baselines are covered by `CapacitySmokeTest` and `UserEventStreamCapacityTest`. Connection lists are not yet bounded; that work is tracked in PN-066.
 
 ### PN-055 — Confirm proposed Round 8 behavior defaults
 
@@ -401,6 +402,13 @@
 - **Type:** Story · **Priority:** P1 · **Relative size:** 5 points · **Decision:** CONFIRMED · **Status:** Done
 - **Depends on:** PN-027, PN-028, PN-029
 - **Acceptance criteria:** Posts have explicit Public or Connections audience selected in composer; public feed returns only Public posts; connections feed returns Public posts and posts by accepted connections with Connections audience; authors can see their own posts in either view; edits preserve audience; migration assigns existing posts Public; API and UI tests verify unauthorized users cannot read connection-only posts or engage with them
+
+### PN-066 — Paginate connection lists and contact list
+
+- **Type:** Story · **Priority:** P1 · **Relative size:** 5 points · **Decision:** CONFIRMED · **Status:** Backlog
+- **Depends on:** PN-035, PN-036, PN-054
+- **Acceptance criteria:** `GET /connections`, `/connections/requests/incoming` and `/connections/requests/outgoing` use the shared PageQuery/PageResponse contract with the 100-item cap; network screens load pages; API tests cover paging and the cap; expectations in `CapacitySmokeTest` updated
+- **Note:** Found by PN-054. These endpoints currently return unbounded arrays.
 
 ## M4 — Messaging
 
