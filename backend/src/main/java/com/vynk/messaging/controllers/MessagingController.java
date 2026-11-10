@@ -28,8 +28,14 @@ public class MessagingController {
     public MessagingController(MessagingService service) { this.service = service; }
 
     @GetMapping
-    public java.util.List<MessagingApi.InboxItem> inbox(Authentication authentication) {
-        return service.inbox(requireUsername(authentication));
+    public PageResponse<MessagingApi.InboxItem> inbox(@Valid @ModelAttribute PageQuery page,
+                                                      Authentication authentication) {
+        return service.inbox(requireUsername(authentication), page);
+    }
+
+    @GetMapping("/unread-summary")
+    public MessagingApi.UnreadSummary unreadSummary(Authentication authentication) {
+        return service.unreadSummary(requireUsername(authentication));
     }
 
     @DeleteMapping("/{conversationId}")

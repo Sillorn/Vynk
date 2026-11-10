@@ -406,7 +406,7 @@
 
 ### PN-065 — Paginate conversation list and remove N+1 queries
 
-- **Type:** Story · **Priority:** P2 · **Relative size:** 5 points · **Decision:** CONFIRMED · **Status:** Backlog
+- **Type:** Story · **Priority:** P2 · **Relative size:** 5 points · **Decision:** CONFIRMED · **Status:** Done
 - **Depends on:** PN-040, PN-042
 - **Acceptance criteria:** Conversation list API is paginated using the shared PageQuery/PageResponse contract; list is loaded without per-conversation N+1 queries; frontend inbox updated to page or load more and reviewed together with the frontend review findings; API and UI tests cover paging, unread counts and hidden conversations
 - **Note:** Found in the backend review. `GET /conversations` is unpaginated and issues N+1 queries. Schedule after the frontend review, since the response shape change affects the inbox UI.

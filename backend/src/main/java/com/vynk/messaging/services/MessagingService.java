@@ -14,7 +14,12 @@ import com.vynk.messaging.repositories.ConversationUserStateRepository;
 import com.vynk.shared.api.PageQuery;
 import com.vynk.shared.api.PageResponse;
 import com.vynk.shared.error.ApiException;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -89,32 +94,46 @@ public class MessagingService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<MessagingApi.InboxItem> inbox(String actorUsername) {
+    public PageResponse<MessagingApi.InboxItem> inbox(String actorUsername, PageQuery page) {
         UserAccount actor = account(actorUsername);
-        return conversations.findByUserLowIdOrUserHighId(actor.getId(), actor.getId()).stream()
-                .filter(conversation -> !states.findByConversationIdAndUserId(conversation.getId(), actor.getId())
-                        .map(ConversationUserState::isHidden).orElse(false))
-                .map(conversation -> {
-                    long participantId = conversation.getUserLowId() == actor.getId()
-                            ? conversation.getUserHighId() : conversation.getUserLowId();
-                    UserAccount participant = accounts.findById(participantId).orElseThrow();
-                    var latest = messages.findFirstByConversationIdOrderByIdDesc(conversation.getId())
-                            .map(message -> MessagingApi.MessageResponse.from(message,
-                                    accounts.findById(message.getSenderId()).map(UserAccount::getUsername).orElse("")))
-                            .orElse(null);
-                    long unread = states.findByConversationIdAndUserId(conversation.getId(), actor.getId())
-                            .map(state -> state.getLastReadMessage() == null
-                                    ? messages.countByConversationIdAndSenderIdNot(conversation.getId(), actor.getId())
-                                    : messages.countByConversationIdAndIdGreaterThanAndSenderIdNot(conversation.getId(),
-                                            state.getLastReadMessage().getId(), actor.getId()))
-                            .orElse(0L);
-                    return new MessagingApi.InboxItem(conversation.getId(), participantId,
-                            participant.getUsername(), latest, unread);
-                })
-                .sorted((first, second) -> Long.compare(
-                        second.latestMessage() == null ? 0 : second.latestMessage().id(),
-                        first.latestMessage() == null ? 0 : first.latestMessage().id()))
-                .toList();
+        var result = conversations.findVisibleForUser(actor.getId(),
+                PageRequest.of(page.pageNumber(), page.pageSize()));
+        List<Conversation> rows = result.getContent();
+        if (rows.isEmpty()) {
+            return PageResponse.of(List.of(), result.getNumber(), result.getSize(), result.getTotalElements());
+        }
+        List<Long> conversationIds = rows.stream().map(Conversation::getId).toList();
+        Map<Long, ConversationMessage> latest = messages.findLatestByConversationIds(conversationIds).stream()
+                .collect(Collectors.toMap(message -> message.getConversation().getId(), Function.identity()));
+        Map<Long, Long> unread = messages.countUnreadByConversation(actor.getId(), conversationIds).stream()
+                .collect(Collectors.toMap(ConversationMessageRepository.UnreadCount::getConversationId,
+                        ConversationMessageRepository.UnreadCount::getUnread));
+        Map<Long, Long> participantIds = rows.stream().collect(Collectors.toMap(Conversation::getId,
+                conversation -> otherParticipant(conversation, actor.getId())));
+        Set<Long> accountIds = new HashSet<>(participantIds.values());
+        latest.values().forEach(message -> accountIds.add(message.getSenderId()));
+        Map<Long, String> usernames = accounts.findUsernameRefsByIdIn(accountIds).stream()
+                .collect(Collectors.toMap(UserAccountRepository.UsernameRef::getId,
+                        UserAccountRepository.UsernameRef::getUsername));
+
+        var items = rows.stream().map(conversation -> {
+            long conversationId = conversation.getId();
+            long participantId = participantIds.get(conversationId);
+            var latestMessage = Optional.ofNullable(latest.get(conversationId))
+                    .map(message -> MessagingApi.MessageResponse.from(message,
+                            usernames.getOrDefault(message.getSenderId(), "")))
+                    .orElse(null);
+            return new MessagingApi.InboxItem(conversationId, participantId,
+                    usernames.getOrDefault(participantId, ""), latestMessage,
+                    unread.getOrDefault(conversationId, 0L));
+        }).toList();
+        return PageResponse.of(items, result.getNumber(), result.getSize(), result.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public MessagingApi.UnreadSummary unreadSummary(String actorUsername) {
+        UserAccount actor = account(actorUsername);
+        return new MessagingApi.UnreadSummary(states.countConversationsWithUnread(actor.getId()));
     }
 
     @Transactional
@@ -154,6 +173,10 @@ public class MessagingService {
         var items = result.getContent().stream().map(message -> MessagingApi.MessageResponse.from(
                 message, usernames.getOrDefault(message.getSenderId(), ""))).toList();
         return PageResponse.of(items, result.getNumber(), result.getSize(), result.getTotalElements());
+    }
+
+    private static long otherParticipant(Conversation conversation, long actorId) {
+        return conversation.getUserLowId() == actorId ? conversation.getUserHighId() : conversation.getUserLowId();
     }
 
     private UserAccount account(String username) {

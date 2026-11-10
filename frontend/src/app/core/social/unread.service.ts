@@ -28,8 +28,8 @@ export class UnreadService {
   }
 
   refreshMessages(): void {
-    this.messaging.inbox().subscribe({
-      next: (items) => this.hasUnreadMessages.set(items.some((item) => item.unreadCount > 0)),
+    this.messaging.unreadSummary().subscribe({
+      next: (summary) => this.hasUnreadMessages.set(summary.unreadConversations > 0),
       error: () => this.hasUnreadMessages.set(false),
     });
   }

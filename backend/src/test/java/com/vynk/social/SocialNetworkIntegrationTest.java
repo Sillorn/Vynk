@@ -177,7 +177,7 @@ class SocialNetworkIntegrationTest {
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.body").value("hello Bob")).andReturn();
         long conversationId = mapper.readTree(sent.getResponse().getContentAsString()).get("conversationId").asLong();
         mvc.perform(get("/api/v1/conversations").session(bob))
-                .andExpect(status().isOk()).andExpect(jsonPath("$[0].unreadCount").value(1));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].unreadCount").value(1));
         mvc.perform(get("/api/v1/conversations/" + conversationId + "/messages").session(bob)
                         .param("page", "0").param("size", "20"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].body").value("hello Bob"));
@@ -188,13 +188,13 @@ class SocialNetworkIntegrationTest {
         mvc.perform(delete("/api/v1/conversations/" + conversationId).session(bob).with(csrf()))
                 .andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/conversations").session(bob))
-                .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty());
         mvc.perform(post("/api/v1/conversations/with/messagebob/messages").session(alice).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(java.util.Map.of(
                                 "body", "hello again", "clientRequestId", java.util.UUID.randomUUID().toString()))))
                 .andExpect(status().isCreated());
         mvc.perform(get("/api/v1/conversations").session(bob))
-                .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items").isNotEmpty());
         mvc.perform(get("/api/v1/events").session(mallory)).andExpect(status().isOk());
     }
 

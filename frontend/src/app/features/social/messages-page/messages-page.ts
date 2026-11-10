@@ -71,6 +71,16 @@ import {
                   }
                 </button>
               }
+              @if (inboxHasNext()) {
+                <button
+                  mat-button
+                  type="button"
+                  (click)="loadMoreInbox()"
+                  [disabled]="loadingMoreInbox()"
+                >
+                  {{ loadingMoreInbox() ? 'Loading conversations…' : 'Load more conversations' }}
+                </button>
+              }
             }
           </aside>
           <section class="surface-card conversation" aria-label="Conversation">
@@ -373,6 +383,8 @@ export class MessagesPage {
   private readonly eventStream = inject(EventStreamService);
   private readonly unread = inject(UnreadService);
   protected readonly inbox = signal<readonly InboxItem[]>([]);
+  protected readonly inboxHasNext = signal(false);
+  protected readonly loadingMoreInbox = signal(false);
   protected readonly selected = signal<InboxItem | null>(null);
   protected readonly messages = signal<readonly ConversationMessage[]>([]);
   protected readonly loadingInbox = signal(false);
@@ -383,6 +395,7 @@ export class MessagesPage {
   protected readonly historyError = signal<string | null>(null);
   protected draft = '';
   private page = 0;
+  private inboxPage = 0;
   private historySeq = 0;
   private inboxSeq = 0;
   private pendingSend: { username: string; body: string; id: string } | null = null;
@@ -415,12 +428,15 @@ export class MessagesPage {
   protected reload(): void {
     this.error.set(null);
     this.loadingInbox.set(true);
+    this.loadingMoreInbox.set(false);
     const seq = ++this.inboxSeq;
-    this.service.inbox().subscribe({
-      next: (items) => {
+    this.service.inbox(0).subscribe({
+      next: (page) => {
         if (seq !== this.inboxSeq) return;
-        this.inbox.set(items);
-        items.forEach((item) => this.displayNames.load(item.participantUsername));
+        this.inbox.set(page.items);
+        this.inboxPage = 0;
+        this.inboxHasNext.set(page.hasNext);
+        page.items.forEach((item) => this.displayNames.load(item.participantUsername));
         this.loadingInbox.set(false);
       },
       error: (err) => {
@@ -433,11 +449,24 @@ export class MessagesPage {
 
   protected startConversation(username: string): void {
     if (!username) return;
+    this.resolveConversation(username);
+  }
+
+  /** The inbox is paged, so an existing conversation may sit on a page not loaded yet. */
+  private resolveConversation(username: string): void {
     const existing = this.inbox().find((item) => item.participantUsername === username);
     if (existing) {
       this.open(existing);
       return;
     }
+    if (this.inboxHasNext()) {
+      this.loadMoreInbox(() => this.resolveConversation(username));
+      return;
+    }
+    this.beginDraft(username);
+  }
+
+  private beginDraft(username: string): void {
     this.selected.set({
       conversationId: 0,
       participantId: 0,
@@ -460,6 +489,33 @@ export class MessagesPage {
     this.page = 0;
     this.hasOlder.set(false);
     this.fetchMessages(false);
+  }
+
+  protected loadMoreInbox(then?: () => void): void {
+    if (this.loadingMoreInbox() || !this.inboxHasNext()) return;
+    this.loadingMoreInbox.set(true);
+    const seq = this.inboxSeq;
+    const next = this.inboxPage + 1;
+    this.service.inbox(next).subscribe({
+      next: (page) => {
+        if (seq !== this.inboxSeq) return;
+        this.inboxPage = next;
+        this.inboxHasNext.set(page.hasNext);
+        // Offset paging can repeat a row when the inbox changes between requests; keep the first copy.
+        this.inbox.update((rows) => {
+          const known = new Set(rows.map((row) => row.conversationId));
+          return [...rows, ...page.items.filter((item) => !known.has(item.conversationId))];
+        });
+        page.items.forEach((item) => this.displayNames.load(item.participantUsername));
+        this.loadingMoreInbox.set(false);
+        then?.();
+      },
+      error: (err) => {
+        if (seq !== this.inboxSeq) return;
+        this.fail(err);
+        this.loadingMoreInbox.set(false);
+      },
+    });
   }
 
   protected loadOlder(): void {

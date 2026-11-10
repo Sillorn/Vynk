@@ -18,6 +18,19 @@ export interface InboxItem {
   readonly unreadCount: number;
 }
 
+export interface InboxPage {
+  readonly items: readonly InboxItem[];
+  readonly page: number;
+  readonly size: number;
+  readonly totalElements: number;
+  readonly totalPages: number;
+  readonly hasNext: boolean;
+}
+
+export interface UnreadSummary {
+  readonly unreadConversations: number;
+}
+
 export interface MessagePage {
   readonly items: readonly ConversationMessage[];
   readonly page: number;
@@ -32,8 +45,16 @@ export class MessagingService {
   private readonly http = inject(HttpClient);
   private readonly endpoint = '/api/v1/conversations';
 
-  inbox() {
-    return this.http.get<InboxItem[]>(this.endpoint, { withCredentials: true });
+  inbox(page = 0, size = 20) {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<InboxPage>(this.endpoint, { params, withCredentials: true });
+  }
+
+  /** Badge source: counts every visible conversation, not just the loaded inbox page. */
+  unreadSummary() {
+    return this.http.get<UnreadSummary>(`${this.endpoint}/unread-summary`, {
+      withCredentials: true,
+    });
   }
 
   history(conversationId: number, page = 0, size = 30) {

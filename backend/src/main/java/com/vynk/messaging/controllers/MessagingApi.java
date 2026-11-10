@@ -17,6 +17,8 @@ public final class MessagingApi {
     public record InboxItem(long conversationId, long participantId, String participantUsername,
                             MessageResponse latestMessage, long unreadCount) {}
 
+    public record UnreadSummary(long unreadConversations) {}
+
     public record MessageResponse(long id, long conversationId, long senderId, String senderUsername,
                                   String body, Instant createdAt) {
         public static MessageResponse from(ConversationMessage message, String username) {

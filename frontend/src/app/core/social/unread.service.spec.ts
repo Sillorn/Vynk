@@ -7,7 +7,7 @@ import { UnreadService } from './unread.service';
 
 describe('UnreadService', () => {
   const connections = { incoming: vi.fn() };
-  const messaging = { inbox: vi.fn() };
+  const messaging = { unreadSummary: vi.fn() };
   const notifications = { list: vi.fn() };
   let service: UnreadService;
 
@@ -32,10 +32,10 @@ describe('UnreadService', () => {
   });
 
   it('flags unread messages', () => {
-    messaging.inbox.mockReturnValue(of([{ unreadCount: 0 }, { unreadCount: 2 }]));
+    messaging.unreadSummary.mockReturnValue(of({ unreadConversations: 2 }));
     service.refreshMessages();
     expect(service.hasUnreadMessages()).toBe(true);
-    messaging.inbox.mockReturnValue(of([{ unreadCount: 0 }]));
+    messaging.unreadSummary.mockReturnValue(of({ unreadConversations: 0 }));
     service.refreshMessages();
     expect(service.hasUnreadMessages()).toBe(false);
   });
@@ -53,9 +53,9 @@ describe('UnreadService', () => {
   });
 
   it('clears indicators on error and via clear()', () => {
-    messaging.inbox.mockReturnValue(of([{ unreadCount: 1 }]));
+    messaging.unreadSummary.mockReturnValue(of({ unreadConversations: 1 }));
     service.refreshMessages();
-    messaging.inbox.mockReturnValue(throwError(() => new Error('x')));
+    messaging.unreadSummary.mockReturnValue(throwError(() => new Error('x')));
     service.refreshMessages();
     expect(service.hasUnreadMessages()).toBe(false);
 
@@ -67,7 +67,7 @@ describe('UnreadService', () => {
 
   it('refreshAll refreshes every indicator', () => {
     connections.incoming.mockReturnValue(of([{ id: 1 }]));
-    messaging.inbox.mockReturnValue(of([{ unreadCount: 1 }]));
+    messaging.unreadSummary.mockReturnValue(of({ unreadConversations: 1 }));
     notifications.list.mockReturnValue(of({ items: [{ readAt: null }], hasNext: false }));
     service.refreshAll();
     expect(service.hasIncomingInvitations()).toBe(true);

@@ -16,6 +16,14 @@ const item = (id: number, name: string) => ({
   latestMessage: null,
   unreadCount: 0,
 });
+const inboxPage = (items: unknown[], page = 0, hasNext = false) => ({
+  items,
+  page,
+  size: 20,
+  totalElements: items.length,
+  totalPages: hasNext ? page + 2 : page + 1,
+  hasNext,
+});
 const message = (id: number) => ({
   id,
   conversationId: 1,
@@ -26,13 +34,14 @@ const message = (id: number) => ({
 
 interface Internals {
   draft: string;
-  inbox: { set(v: unknown): void };
+  inbox(): readonly { conversationId: number; participantUsername: string }[];
   selected(): { conversationId: number } | null;
   messages(): unknown[];
   open(i: unknown): void;
   send(): void;
   hideSelected(): void;
   startConversation(u: string): void;
+  loadMoreInbox(): void;
 }
 
 describe('MessagesPage', () => {
@@ -44,8 +53,8 @@ describe('MessagesPage', () => {
     markRead: vi.fn(),
   };
 
-  function create() {
-    messaging.inbox.mockReturnValue(of([item(1, 'bob'), item(2, 'cy')]));
+  function create(rows: unknown[] = [item(1, 'bob'), item(2, 'cy')]) {
+    messaging.inbox.mockReturnValue(of(inboxPage(rows)));
     messaging.markRead.mockReturnValue(of(undefined));
     TestBed.configureTestingModule({
       providers: [
@@ -136,5 +145,82 @@ describe('MessagesPage', () => {
     page.open(item(2, 'cy'));
     slow.next({ items: [message(10)], hasNext: false });
     expect(page.messages()).toEqual([message(20)]);
+  });
+  it('renders unread badges and a hidden conversation disappears from the inbox', () => {
+    const { fixture, page } = create([{ ...item(1, 'bob'), unreadCount: 3 }, item(2, 'cy')]);
+    fixture.detectChanges();
+    const badge = (fixture.nativeElement as HTMLElement).querySelector('.badge');
+    expect(badge?.textContent?.trim()).toBe('3');
+    expect(badge?.getAttribute('aria-label')).toBe('3 unread messages');
+
+    messaging.history.mockReturnValue(of({ items: [], hasNext: false }));
+    messaging.hide.mockReturnValue(of(undefined));
+    messaging.markRead.mockReturnValue(of(undefined));
+    const confirmSpy = vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
+    page.open(item(1, 'bob'));
+    fixture.detectChanges();
+    const hide = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find(
+      (b) => b.textContent?.includes('Hide conversation'),
+    );
+    hide!.click();
+    fixture.detectChanges();
+    const names = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.inbox-item .username'),
+    ).map((el) => el.textContent?.trim());
+    expect(names).toEqual(['@cy']);
+    confirmSpy.mockRestore();
+  });
+
+  it('loads the next inbox page on demand and keeps the loaded rows', () => {
+    messaging.inbox
+      .mockReturnValueOnce(of(inboxPage([item(1, 'bob')], 0, true)))
+      .mockReturnValueOnce(of(inboxPage([item(1, 'bob'), item(2, 'cy')], 1, false)));
+    const { fixture, page } = create();
+    expect(messaging.inbox).toHaveBeenLastCalledWith(0);
+    const more = () =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Load more conversations'),
+      );
+    expect(more()).toBeTruthy();
+
+    more()!.click();
+    fixture.detectChanges();
+
+    expect(messaging.inbox).toHaveBeenLastCalledWith(1);
+    // The duplicate row that offset paging can return is not rendered twice.
+    expect(page.inbox()).toHaveLength(2);
+    expect(more()).toBeUndefined();
+  });
+
+  it('keeps the first page when a load-more response arrives after a reload', () => {
+    const slow = new Subject<unknown>();
+    messaging.inbox
+      .mockReturnValueOnce(of(inboxPage([item(1, 'bob')], 0, true)))
+      .mockReturnValueOnce(slow)
+      .mockReturnValueOnce(of(inboxPage([item(3, 'dee')], 0, false)));
+    const { page } = create();
+    page.loadMoreInbox();
+    (page as unknown as { reload(): void }).reload();
+    slow.next(inboxPage([item(2, 'cy')], 1, false));
+    expect(page.inbox().map((row) => row.participantUsername)).toEqual(['dee']);
+  });
+
+  it('finds a contact whose conversation is on a later page instead of opening a draft', () => {
+    messaging.inbox
+      .mockReturnValueOnce(of(inboxPage([item(1, 'bob')], 0, true)))
+      .mockReturnValueOnce(of(inboxPage([item(7, 'zed')], 1, false)));
+    messaging.history.mockReturnValue(of({ items: [], hasNext: false }));
+    const { page } = create();
+    page.startConversation('zed');
+    expect(page.selected()?.conversationId).toBe(7);
+    expect(messaging.inbox).toHaveBeenLastCalledWith(1);
+  });
+
+  it('opens a draft for a new contact once every page is loaded', () => {
+    messaging.inbox.mockReturnValueOnce(of(inboxPage([item(1, 'bob')], 0, false)));
+    const { page } = create();
+    page.startConversation('newperson');
+    expect(page.selected()).toEqual(expect.objectContaining({ conversationId: 0 }));
+    expect(messaging.inbox).toHaveBeenCalledTimes(1);
   });
 });
